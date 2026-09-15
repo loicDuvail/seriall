@@ -1,18 +1,18 @@
-import type { Cereal } from "../types";
+import type { Seriall } from "../types";
 import { nativeClasses } from "./serialize.const";
 import { serialize } from "./serialize";
 import { deserialize } from "./deserialize";
 
 export class Serializer {
   codecs: Map<
-    Cereal.ClassName | Cereal.NativeRevivableClass,
-    Cereal.ClassCodec<any, any>
+    Seriall.ClassName | Seriall.NativeRevivableClass,
+    Seriall.ClassCodec<any, any>
   > = new Map(nativeClasses);
 
   constructor({
     classes,
   }: {
-    classes?: Record<Cereal.ClassName, Cereal.ClassCodec<any, any>>;
+    classes?: Record<Seriall.ClassName, Seriall.ClassCodec<any, any>>;
   } = {}) {
     if (classes) {
       Object.assign(this.codecs, classes);
@@ -24,14 +24,14 @@ export class Serializer {
     O,
     ClassName extends string,
   >(
-    className: ClassName & Cereal.NotReserved<ClassName>,
+    className: ClassName & Seriall.NotReserved<ClassName>,
     clazz: I,
     options?: {
       encode?: (instance: InstanceType<I>) => O;
       decode?: (encoded: O) => InstanceType<I>;
     },
   ) => {
-    const reservationPrefix: Cereal.ReservationPrefix = "$__";
+    const reservationPrefix: Seriall.ReservationPrefix = "$__";
     if (className.startsWith(reservationPrefix)) {
       throw new Error(
         `Class name "${className}" is reserved for serialization.`,

@@ -1,36 +1,36 @@
 import { signatureKey, signatureValue } from "./serialize.const";
-import type { Cereal } from "../types";
+import type { Seriall } from "../types";
 
 export const isPrimitive = (
-  value: Cereal.Serializable,
-): value is Cereal.Primitive => {
+  value: Seriall.Serializable,
+): value is Seriall.Primitive => {
   if (typeof value === "number") {
     return !isSpecialNumber(value);
   }
   return typeof value === "string" || typeof value === "boolean";
 };
 
-export const isSymbol = (value: Cereal.Serializable): value is Symbol => {
+export const isSymbol = (value: Seriall.Serializable): value is Symbol => {
   return typeof value === "symbol";
 };
 
-export const isUndefined = (value: Cereal.Serializable): value is undefined =>
+export const isUndefined = (value: Seriall.Serializable): value is undefined =>
   value === undefined;
 
-export const isNull = (value: Cereal.Serializable): value is null =>
+export const isNull = (value: Seriall.Serializable): value is null =>
   value === null;
 
-export const isBigInt = (value: Cereal.Serializable): value is bigint =>
+export const isBigInt = (value: Seriall.Serializable): value is bigint =>
   typeof value === "bigint";
 
 export const isSpecialNumber = (value: number): boolean => {
   return [Infinity, -Infinity, NaN].includes(value) || Object.is(value, -0);
 };
 
-export const isSerializedNative = <T extends Cereal.NativeRevivableType>(
-  node: Cereal.Revivable<any>,
+export const isSerializedNative = <T extends Seriall.NativeRevivableType>(
+  node: Seriall.Revivable<any>,
   type: T,
-): node is Cereal.Revivable<T> => {
+): node is Seriall.Revivable<T> => {
   return node.type === type;
 };
 
@@ -59,8 +59,8 @@ export const decodeSpecialNumber = (value: string) => {
 };
 
 export const isSigned = (
-  value: Cereal.SerializedNode,
-): value is Cereal.Revivable<any> =>
+  value: Seriall.SerializedNode,
+): value is Seriall.Revivable<any> =>
   typeof value === "object" &&
   value !== null &&
   !Array.isArray(value) &&

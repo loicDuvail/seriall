@@ -8,14 +8,14 @@ import {
   encodeSpecialNumber,
   isBigInt,
 } from "./serialize.utils";
-import type { Cereal } from "../types";
+import type { Seriall } from "../types";
 
 const normalize =
-  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
+  (codecs: Map<string, Seriall.ClassCodec<new (...args: any) => any, any>>) =>
   (
-    data: Cereal.Serializable,
-    graph: Cereal.SerializedGraph,
-    seen: Map<Exclude<Cereal.Serializable, Cereal.Primitive>, number>,
+    data: Seriall.Serializable,
+    graph: Seriall.SerializedGraph,
+    seen: Map<Exclude<Seriall.Serializable, Seriall.Primitive>, number>,
   ): number => {
     if (isPrimitive(data)) {
       const id = graph.length;
@@ -34,7 +34,7 @@ const normalize =
 
     if (isSymbol(data)) {
       graph.push(undefined as never);
-      const serialized: Cereal.Revivable<"$__symbol"> = {
+      const serialized: Seriall.Revivable<"$__symbol"> = {
         ...signature,
         type: "$__symbol",
         value: normalize(codecs)(data.description, graph, seen),
@@ -44,7 +44,7 @@ const normalize =
     }
 
     if (isUndefined(data)) {
-      const serialized: Cereal.Revivable<"$__undefined"> = {
+      const serialized: Seriall.Revivable<"$__undefined"> = {
         ...signature,
         type: "$__undefined",
       };
@@ -53,7 +53,7 @@ const normalize =
     }
 
     if (isNull(data)) {
-      const serialized: Cereal.Revivable<"$__null"> = {
+      const serialized: Seriall.Revivable<"$__null"> = {
         ...signature,
         type: "$__null",
       };
@@ -65,7 +65,7 @@ const normalize =
     if (typeof data === "number" && isSpecialNumber(data)) {
       graph.push(undefined as never);
 
-      const serialized: Cereal.Revivable<"$__special_number"> = {
+      const serialized: Seriall.Revivable<"$__special_number"> = {
         ...signature,
         type: "$__special_number",
         value: normalize(codecs)(encodeSpecialNumber(data), graph, seen),
@@ -78,7 +78,7 @@ const normalize =
     if (isBigInt(data)) {
       graph.push(undefined as never);
 
-      const serialized: Cereal.Revivable<"$__bigint"> = {
+      const serialized: Seriall.Revivable<"$__bigint"> = {
         ...signature,
         type: "$__bigint",
         value: normalize(codecs)(data.toString(), graph, seen),
@@ -121,7 +121,7 @@ const normalize =
 
     graph.push(undefined as never);
 
-    const serialized: Cereal.Revivable<Cereal.ClassName> = {
+    const serialized: Seriall.Revivable<Seriall.ClassName> = {
       ...signature,
       type: className,
       value: normalize(codecs)(encode(data), graph, seen),
@@ -133,11 +133,11 @@ const normalize =
   };
 
 export const serialize =
-  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
-  (data: Cereal.Serializable): string => {
-    const graph: Cereal.SerializedGraph = [];
+  (codecs: Map<string, Seriall.ClassCodec<new (...args: any) => any, any>>) =>
+  (data: Seriall.Serializable): string => {
+    const graph: Seriall.SerializedGraph = [];
     const memory = new Map<
-      Exclude<Cereal.Serializable, Cereal.Primitive>,
+      Exclude<Seriall.Serializable, Seriall.Primitive>,
       number
     >();
     normalize(codecs)(data, graph, memory);

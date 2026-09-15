@@ -1,14 +1,14 @@
-import type { Cereal } from "../types";
+import type { Seriall } from "../types";
 
-export const signature: Cereal.Signature = {
+export const signature: Seriall.Signature = {
   $__serialized: true,
 };
 export const signatureKey: keyof typeof signature = "$__serialized";
 export const signatureValue: (typeof signature)[typeof signatureKey] = true;
 
 export const nativeClasses: [
-  Cereal.NativeRevivableClass,
-  Cereal.ClassCodec<any, any>,
+  Seriall.NativeRevivableClass,
+  Seriall.ClassCodec<any, any>,
 ][] = [
   [
     "$__String",

@@ -1,4 +1,4 @@
-import type { Cereal } from "../types";
+import type { Seriall } from "../types";
 import { defaultDecoder, nativeClasses } from "./serialize.const";
 import {
   isPrimitive,
@@ -8,12 +8,12 @@ import {
 } from "./serialize.utils";
 
 const denormalize =
-  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
+  (codecs: Map<string, Seriall.ClassCodec<new (...args: any) => any, any>>) =>
   (
-    data: Cereal.SerializedGraph,
-    revived: Map<number, Cereal.Serializable>,
+    data: Seriall.SerializedGraph,
+    revived: Map<number, Seriall.Serializable>,
     index: number,
-  ): Cereal.Serializable => {
+  ): Seriall.Serializable => {
     if (revived.has(index)) {
       return revived.get(index);
     }
@@ -29,7 +29,7 @@ const denormalize =
     }
 
     if (Array.isArray(node)) {
-      const revivedArray: Cereal.Serializable[] = [];
+      const revivedArray: Seriall.Serializable[] = [];
       revived.set(index, revivedArray);
 
       node.forEach((id) => {
@@ -42,7 +42,7 @@ const denormalize =
 
     // if node is just a plain object
     if (!isSigned(node)) {
-      const revivedObject: Record<string | number, Cereal.Serializable> = {};
+      const revivedObject: Record<string | number, Seriall.Serializable> = {};
       revived.set(index, revivedObject);
 
       // node's values are nor "string" nor "true" since those two value are reserved to signed serialized objects
@@ -91,7 +91,7 @@ const denormalize =
 
     const instanceNode = node as Exclude<
       typeof node,
-      Cereal.Revivable<Cereal.NativeRevivableType>
+      Seriall.Revivable<Seriall.NativeRevivableType>
     >;
 
     let { clazz, decode } = codecs.get(instanceNode.type) || {};
@@ -158,10 +158,10 @@ const denormalize =
   };
 
 export const deserialize =
-  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
+  (codecs: Map<string, Seriall.ClassCodec<new (...args: any) => any, any>>) =>
   (data: string) => {
-    const normalized: Cereal.SerializedGraph = JSON.parse(data);
-    const memory = new Map<number, Cereal.Serializable>();
+    const normalized: Seriall.SerializedGraph = JSON.parse(data);
+    const memory = new Map<number, Seriall.Serializable>();
     const deserialized = denormalize(codecs)(normalized, memory, 0);
     return deserialized;
   };

@@ -1,8 +1,8 @@
-export namespace Cereal {
+export namespace Seriall {
   type ReservationPrefix = `$__`;
   type Reserved<T extends string> = `${ReservationPrefix}${T}`;
   type NotReserved<T extends string> =
-    T extends Cereal.Reserved<string> ? never : unknown;
+    T extends Seriall.Reserved<string> ? never : unknown;
 
   // signature value cannot be a number,
   // numbers are reserved for serialization referential integrity
