@@ -1,0 +1,20 @@
+{
+  "name": "orm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node ./esbuild.js",
+    "test": "npx jest"
+  },
+  "keywords": [],
+  "type": "module",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.5.1",
+    "esbuild": "^0.28.2",
+    "jest": "^30.5.1",
+    "ts-jest": "^29.4.12",
+    "typescript": "^6.0.3"
+  }
+}

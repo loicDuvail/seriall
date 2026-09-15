@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ESNext"],
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strictPropertyInitialization": false,
+    "types": ["jest", "node"]
+  },
+  "include": ["src/**/*.ts"]
+}
