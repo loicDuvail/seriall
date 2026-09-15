@@ -1,4 +1,4 @@
-import type { ORM } from "../types";
+import type { Cereal } from "../types";
 import { defaultDecoder, nativeClasses } from "./serialize.const";
 import {
   isPrimitive,
@@ -8,17 +8,12 @@ import {
 } from "./serialize.utils";
 
 const denormalize =
+  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
   (
-    codecs: Record<
-      string,
-      ORM.Serialization.ClassCodec<new (...args: any) => any, any>
-    >,
-  ) =>
-  (
-    data: ORM.Serialization.SerializedGraph,
-    revived: Map<number, ORM.Serialization.Serializable>,
+    data: Cereal.SerializedGraph,
+    revived: Map<number, Cereal.Serializable>,
     index: number,
-  ): ORM.Serialization.Serializable => {
+  ): Cereal.Serializable => {
     if (revived.has(index)) {
       return revived.get(index);
     }
@@ -34,7 +29,7 @@ const denormalize =
     }
 
     if (Array.isArray(node)) {
-      const revivedArray: ORM.Serialization.Serializable[] = [];
+      const revivedArray: Cereal.Serializable[] = [];
       revived.set(index, revivedArray);
 
       node.forEach((id) => {
@@ -47,10 +42,7 @@ const denormalize =
 
     // if node is just a plain object
     if (!isSigned(node)) {
-      const revivedObject: Record<
-        string | number,
-        ORM.Serialization.Serializable
-      > = {};
+      const revivedObject: Record<string | number, Cereal.Serializable> = {};
       revived.set(index, revivedObject);
 
       // node's values are nor "string" nor "true" since those two value are reserved to signed serialized objects
@@ -99,10 +91,10 @@ const denormalize =
 
     const instanceNode = node as Exclude<
       typeof node,
-      ORM.Serialization.Revivable<ORM.Serialization.NativeRevivableType>
+      Cereal.Revivable<Cereal.NativeRevivableType>
     >;
 
-    let { clazz, decode } = codecs[instanceNode.type] || {};
+    let { clazz, decode } = codecs.get(instanceNode.type) || {};
 
     if (!clazz) {
       throw new Error(
@@ -113,7 +105,7 @@ const denormalize =
     decode ||= defaultDecoder(clazz);
 
     if (
-      instanceNode.type in nativeClasses &&
+      nativeClasses.some((c) => c[0] === instanceNode.type) &&
       !["$__Set", "$__Map"].includes(instanceNode.type)
     ) {
       const revivedInstance = decode(
@@ -166,15 +158,10 @@ const denormalize =
   };
 
 export const deserialize =
-  (
-    codecs: Record<
-      string,
-      ORM.Serialization.ClassCodec<new (...args: any) => any, any>
-    >,
-  ) =>
+  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
   (data: string) => {
-    const normalized: ORM.Serialization.SerializedGraph = JSON.parse(data);
-    const memory = new Map<number, ORM.Serialization.Serializable>();
+    const normalized: Cereal.SerializedGraph = JSON.parse(data);
+    const memory = new Map<number, Cereal.Serializable>();
     const deserialized = denormalize(codecs)(normalized, memory, 0);
     return deserialized;
   };

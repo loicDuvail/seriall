@@ -11,7 +11,7 @@ import {
 import type { Cereal } from "../types";
 
 const normalize =
-  (codecs: Record<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
+  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
   (
     data: Cereal.Serializable,
     graph: Cereal.SerializedGraph,
@@ -100,9 +100,9 @@ const normalize =
       return id;
     }
 
-    let [className, { encode }] = Object.entries(codecs).find(
-      ([_, { clazz }]) => data instanceof clazz,
-    ) || [undefined, {}];
+    let [className, { encode }] = codecs
+      .entries()
+      .find(([_, { clazz }]) => data instanceof clazz) || [undefined, {}];
 
     encode ||= defaultEncoder;
 
@@ -133,7 +133,7 @@ const normalize =
   };
 
 export const serialize =
-  (codecs: Record<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
+  (codecs: Map<string, Cereal.ClassCodec<new (...args: any) => any, any>>) =>
   (data: Cereal.Serializable): string => {
     const graph: Cereal.SerializedGraph = [];
     const memory = new Map<

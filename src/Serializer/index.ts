@@ -4,10 +4,10 @@ import { serialize } from "./serialize";
 import { deserialize } from "./deserialize";
 
 export class Serializer {
-  codecs: Record<
+  codecs: Map<
     Cereal.ClassName | Cereal.NativeRevivableClass,
     Cereal.ClassCodec<any, any>
-  > = { ...nativeClasses };
+  > = new Map(nativeClasses);
 
   constructor({
     classes,
@@ -39,11 +39,11 @@ export class Serializer {
     }
     const _class = className as string;
 
-    this.codecs[_class] = {
+    this.codecs.set(_class, {
       clazz,
       encode: options?.encode,
       decode: options?.decode,
-    };
+    });
 
     this.serialize = serialize(this.codecs);
     this.deserialize = deserialize(this.codecs);
