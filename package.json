@@ -1,13 +1,19 @@
 {
-  "name": "orm",
-  "version": "1.0.0",
+  "name": "seriall",
+  "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "node ./esbuild.js",
     "test": "npx jest"
   },
-  "keywords": [],
+  "keywords": [
+    "serializer",
+    "circular",
+    "json",
+    "referential",
+    "integrity"
+  ],
   "type": "module",
   "devDependencies": {
     "@types/jest": "^30.0.0",
