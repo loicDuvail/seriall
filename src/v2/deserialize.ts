@@ -1,10 +1,10 @@
 import type { Seriall } from "./types";
-import { isJsonPrimitive } from "./utils";
+import { isJsonPrimitive, type BidirectionalMap } from "./utils";
 import { DATA_KEY, SIGNATURE_KEY, NO_TRANSFORM_DATA } from "./const";
 
 export const deserialize = (
   data: string,
-  transformers: Map<
+  transformers: BidirectionalMap<
     Seriall.Transformer.Id,
     Seriall.Transformer<boolean, any, any>
   >,

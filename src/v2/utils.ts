@@ -37,9 +37,60 @@ export const decodeSpecialNumber = (value: 0 | 1 | 2 | 3) => {
   }
 };
 
-export const getMatchingTransformer = (
-  node: Seriall.Serializable,
-  transformers: Map<Seriall.Transformer.Id, Seriall.Transformer>,
-) => {
-  return transformers.values().find((transformer) => transformer.match(node));
+export class BidirectionalMap<K, V> {
+  map = new Map<K, V>();
+  revMap = new Map<V, K>();
+
+  constructor(entries?: ConstructorParameters<typeof Map<K, V>>[0]) {
+    if (!entries) return;
+
+    this.map = new Map(entries);
+    this.map.forEach((value, key) => this.revMap.set(value, key));
+  }
+
+  set = (key: K, value: V) => {
+    this.map.set(key, value);
+    this.revMap.set(value, key);
+  };
+
+  get = this.map.get.bind(this.map);
+  revGet = this.revMap.get.bind(this.revMap);
+  find = this.map.values().find.bind(this.map.values());
+  has = this.map.has.bind(this.map);
+  revHas = this.revMap.has.bind(this.revMap);
+  some = this.map.values().some.bind(this.map.values());
+}
+
+export type Class = new (...args: any[]) => any;
+
+export type DeepOptional<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepOptional<T[K]> : T[K];
+};
+
+export const deepMerge = <T extends Object>(
+  ...objects: DeepOptional<T>[]
+): T => {
+  const result = {} as T;
+
+  for (const obj of objects) {
+    if (!obj || typeof obj !== "object") continue;
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        const existing = result[key];
+
+        result[key] = deepMerge(
+          existing && typeof existing === "object" && !Array.isArray(existing)
+            ? existing
+            : {},
+          value,
+        );
+      } else {
+        // Clone arrays so the originals aren't referenced
+        result[key] = Array.isArray(value) ? structuredClone(value) : value;
+      }
+    }
+  }
+
+  return result;
 };

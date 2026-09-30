@@ -6,11 +6,10 @@
     "target": "esnext",
     "moduleResolution": "bundler",
     "module": "esnext",
-    "outDir": "./dist",
+    "outDir": "./test",
     "rootDir": "./src",
     "strictPropertyInitialization": false,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*test.ts"]
+  "include": ["src/**/*test.ts"]
 }

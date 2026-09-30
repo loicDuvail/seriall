@@ -1,10 +1,13 @@
 import { NO_TRANSFORM_DATA } from "./const";
 import type { Seriall } from "./types";
-import { getMatchingTransformer, isJsonPrimitive } from "./utils";
+import { isJsonPrimitive, type BidirectionalMap } from "./utils";
 
 export const serialize = (
   data: Seriall.Serializable,
-  transformers: Map<Seriall.Transformer.Id, Seriall.Transformer<any, any>>,
+  transformers: BidirectionalMap<
+    Seriall.Transformer.Id,
+    Seriall.Transformer<any, any>
+  >,
 ) => {
   const graph: Seriall.Serialized.Graph = [];
   const seen = new Map<any, number>();
@@ -24,7 +27,9 @@ export const serialize = (
 
     id = graph.length;
 
-    const transformer = getMatchingTransformer(node, transformers);
+    const transformer = transformers.find((transformer) =>
+      transformer.match(node),
+    );
 
     if (transformer) {
       graph.push({ $: transformer.id });

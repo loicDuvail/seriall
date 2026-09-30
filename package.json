@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "node ./esbuild.js",
-    "test": "npx jest"
+    "build:test": "node ./esbuild.test.js",
+    "test": "npm run build:test && npx jest"
   },
   "keywords": [
     "serializer",
