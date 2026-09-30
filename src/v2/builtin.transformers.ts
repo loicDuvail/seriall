@@ -7,14 +7,7 @@ import {
   isSpecialNumber,
 } from "./utils";
 
-type TransformerPack = [
-  Seriall.Transformer.Id,
-  Seriall.Transformer<
-    Seriall.Transformer.Id,
-    Seriall.Serializable,
-    Seriall.Transformer.Encoded
-  >,
-][];
+type TransformerPack = [Seriall.Transformer.Id, Seriall.Transformer][];
 
 // transformers for all non-json-primitive primitives
 const primitivesTransformers: TransformerPack = [
@@ -78,9 +71,14 @@ const primitivesTransformers: TransformerPack = [
   ],
   [
     "obj",
-    new Transformer<object, [PropertyKey, Seriall.Serializable][]>({
+    new Transformer<
+      Object,
+      [PropertyKey, Seriall.Serializable][],
+      { recursive: true }
+    >({
       id: "obj",
       priority: PRIORITY.PRIMITIVE,
+      recursive: true,
       match: (node) => typeof node === "object",
       encode: (node) => {
         const obj: [PropertyKey, Seriall.Serializable][] = [];
@@ -89,8 +87,9 @@ const primitivesTransformers: TransformerPack = [
         }
         return obj;
       },
-      decode: (encoded) => {
+      decode: (registerNode) => {
         const obj = {};
+        const encoded = registerNode(obj);
         for (const [key, value] of encoded) {
           obj[key] = value;
         }
@@ -113,13 +112,15 @@ const nativeClassesTransformers: TransformerPack = [
   ],
   [
     "set",
-    new Transformer<Set<any>, any[]>({
+    new Transformer<Set<any>, any[], { recursive: true }>({
       id: "set",
       priority: PRIORITY.NATIVE_CLASS,
+      recursive: true,
       match: (node) => node instanceof Set,
       encode: (node) => Array.from(node),
-      decode: (encoded) => {
+      decode: (registerNode) => {
         const set = new Set();
+        const encoded = registerNode(set);
         for (const element of encoded) {
           set.add(element);
         }
@@ -129,13 +130,15 @@ const nativeClassesTransformers: TransformerPack = [
   ],
   [
     "map",
-    new Transformer<Map<any, any>, [any, any][]>({
+    new Transformer<Map<any, any>, [any, any][], { recursive: true }>({
       id: "map",
       priority: PRIORITY.NATIVE_CLASS,
+      recursive: true,
       match: (node) => node instanceof Map,
       encode: (node) => Array.from(node),
-      decode: (encoded) => {
+      decode: (registerNode) => {
         const map = new Map();
+        const encoded = registerNode(map);
         for (const [key, value] of encoded) {
           map.set(key, value);
         }

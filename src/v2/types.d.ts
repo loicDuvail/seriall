@@ -11,13 +11,8 @@ export namespace Seriall {
   export type JsonPrimitive = string | number | boolean;
 
   export namespace Serialized {
-    export type Object = [number, number][];
     export type RevivableNode = { $: Transformer.Id; d?: number };
-    export type Node =
-      | JsonPrimitive
-      | Seriall.Serialized.Object
-      | number[]
-      | RevivableNode;
+    export type Node = JsonPrimitive | number[] | RevivableNode;
     export type Graph = Node[];
   }
 
@@ -25,24 +20,41 @@ export namespace Seriall {
     /** `NoData` is used to signify that no value should be passed to the Revivable node,
      * which is then only described by its tag ($)*/
     type NoData = undefined;
-    type Encoded = JsonPrimitive | object | Encoded[] | NoData;
+
+    type Encoded<Recursive extends boolean> = Recursive extends false
+      ? JsonPrimitive | object | Encoded<false>[] | NoData
+      : (JsonPrimitive | object | Encoded<true>)[];
+
     type Id = string | number;
-    type Matcher<T extends Serializable | Encoded> = (node: T) => boolean;
-    type Serializer<T extends Serializable, O extends Encoded> = (node: T) => O;
-    type Deserializer<T extends Encoded, O extends Serializable> = (
-      node: T,
-    ) => O;
+
+    type Matcher<T extends Serializable> = (node: T) => boolean;
+
+    type Encoder<
+      T extends Serializable,
+      O extends Encoded<Recursive>,
+      Recursive extends boolean,
+    > = (node: T) => O;
+
+    type Decoder<
+      T extends Encoded<Recursive>,
+      O extends Serializable,
+      Recursive extends boolean,
+    > = Recursive extends false
+      ? (node: T) => O
+      : (registerNode: (emptyNode: O) => T) => O;
   }
 
   export type Transformer<
-    Id extends Transformer.Id = Transformer.Id,
+    Recursive extends boolean = boolean,
     Decoded extends Serializable = Serializable,
-    Encoded extends Transformer.Encoded = Transformer.Encoded,
+    Encoded extends Transformer.Encoded<Recursive> =
+      Transformer.Encoded<Recursive>,
   > = {
-    id: Id;
+    id: Transformer.Id;
     priority?: number;
+    recursive?: Recursive;
     match: Transformer.Matcher<Decoded>;
-    encode: Transformer.Serializer<Decoded, Encoded>;
-    decode: Transformer.Deserializer<Encoded, Decoded>;
+    encode: Transformer.Encoder<Decoded, Encoded, Recursive>;
+    decode: Transformer.Decoder<Encoded, Decoded, Recursive>;
   };
 }

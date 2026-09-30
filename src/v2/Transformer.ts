@@ -10,19 +10,20 @@ export const PRIORITY = {
 
 export class Transformer<
   Decoded extends Seriall.Serializable,
-  Encoded extends Seriall.Transformer.Encoded,
->
-  implements Seriall.Transformer
-{
+  Encoded extends Seriall.Transformer.Encoded<Options["recursive"]>,
+  Options extends { recursive: boolean } = { recursive: false },
+> implements Seriall.Transformer<Options["recursive"], Decoded, Encoded> {
   declare id: Seriall.Transformer.Id;
   declare match: Seriall.Transformer.Matcher<Seriall.Serializable>;
-  declare encode: Seriall.Transformer.Serializer<
-    Seriall.Serializable,
-    Seriall.Transformer.Encoded
+  declare encode: Seriall.Transformer.Encoder<
+    Decoded,
+    Encoded,
+    Options["recursive"]
   >;
-  declare decode: Seriall.Transformer.Deserializer<
-    Seriall.Transformer.Encoded,
-    Seriall.Serializable
+  declare decode: Seriall.Transformer.Decoder<
+    Encoded,
+    Decoded,
+    Options["recursive"]
   >;
   declare priority: number;
 
@@ -32,7 +33,7 @@ export class Transformer<
     encode,
     decode,
     priority,
-  }: Seriall.Transformer<Seriall.Transformer.Id, Decoded, Encoded>) {
+  }: Seriall.Transformer<Options["recursive"], Decoded, Encoded>) {
     this.id = id;
     this.match = match;
     this.encode = encode;
