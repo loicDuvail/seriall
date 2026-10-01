@@ -581,12 +581,25 @@ describe("serializer", () => {
   });
 
   describe("class registration", () => {
-    it("allows normal class names", () => {
+    it("registers custom classes", () => {
       class TestEntity {}
 
       expect(() => {
         serializer.registerClass("TestEntity", TestEntity);
       }).not.toThrow();
+    });
+
+    it("serializes custom class instances", () => {
+      class TestEntity {}
+
+      serializer.registerClass("t", TestEntity);
+      const testInstance = new TestEntity();
+
+      console.log(serializer.serialize(testInstance));
+
+      expect(
+        serializer.deserialize(serializer.serialize(testInstance)),
+      ).toBeInstanceOf(TestEntity);
     });
   });
 

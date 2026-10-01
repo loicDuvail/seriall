@@ -164,7 +164,10 @@ export const createClassTransformer = (name: string, clazz: Class) =>
       return encoded;
     },
     decode: (registerNode) => {
-      const revivedInstance = {};
+      let revivedInstance = {};
+      try {
+        revivedInstance = new clazz({});
+      } catch {}
       const { $, d } = registerNode(revivedInstance);
       const instance = new clazz(d);
       Object.assign(revivedInstance, instance);

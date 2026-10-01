@@ -51,7 +51,7 @@ export class Serializer {
     }
     this.transformers.push(transformer);
     this.transformers = this.transformers.sort(
-      (a, b) => (a.priority || Infinity) - (b.priority || Infinity),
+      (a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity),
     );
     this.transformersMap.set(transformer.id, transformer);
   };
