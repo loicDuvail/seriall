@@ -1,29 +1,31 @@
 import type { DeepOptional } from "../types";
 
-export const deepMerge = <T extends Object>(
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null &&
+  typeof value === "object" &&
+  !Array.isArray(value) &&
+  Object.getPrototypeOf(value) === Object.prototype;
+
+export const deepMerge = <T extends Record<string, unknown>>(
   ...objects: DeepOptional<T>[]
 ): T => {
-  const result = {} as T;
+  const result: Record<string, unknown> = {};
 
   for (const obj of objects) {
-    if (!obj || typeof obj !== "object") continue;
+    if (!isPlainObject(obj)) continue;
 
     for (const [key, value] of Object.entries(obj)) {
-      if (value && typeof value === "object" && !Array.isArray(value)) {
+      if (Array.isArray(value)) {
+        result[key] = structuredClone(value);
+      } else if (isPlainObject(value)) {
         const existing = result[key];
 
-        result[key] = deepMerge(
-          existing && typeof existing === "object" && !Array.isArray(existing)
-            ? existing
-            : {},
-          value,
-        );
+        result[key] = deepMerge(isPlainObject(existing) ? existing : {}, value);
       } else {
-        // Clone arrays so the originals aren't referenced
-        result[key] = Array.isArray(value) ? structuredClone(value) : value;
+        result[key] = value;
       }
     }
   }
 
-  return result;
+  return result as T;
 };
