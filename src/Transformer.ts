@@ -1,12 +1,5 @@
+import { PRIORITY } from "./const";
 import type { Seriall } from "./types";
-
-export const PRIORITY = {
-  CUSTOM_CLASS: 0,
-  NATIVE_CLASS: 1,
-  PRIMITIVE: 2,
-  custom: (priority: number) =>
-    (priority <= 0 ? 1 : priority) + PRIORITY.CUSTOM_CLASS,
-} as const;
 
 export class Transformer<
   Decoded extends Seriall.Serializable,

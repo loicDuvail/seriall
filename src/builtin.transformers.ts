@@ -1,5 +1,5 @@
-import { NO_TRANSFORM_DATA } from "./const";
-import { PRIORITY, Transformer } from "./Transformer";
+import { NO_TRANSFORM_DATA, PRIORITY } from "./const";
+import { Transformer } from "./Transformer";
 import type { Seriall } from "./types";
 import {
   decodeSpecialNumber,
