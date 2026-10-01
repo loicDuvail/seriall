@@ -1,3 +1,3 @@
 export type { Seriall } from "./types";
 export { Serializer } from "./serialization";
-export { Transformer } from "./transformer";
+export { Transformer, SerializableClass } from "./transformer";

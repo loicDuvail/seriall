@@ -3,8 +3,9 @@ import {
   createClassTransformer,
   nativeClassesTransformers,
   primitivesTransformers,
+  type SerializableClass,
 } from "../transformer";
-import type { Class, DeepOptional } from "../types";
+import type { DeepOptional } from "../types";
 import type { Seriall } from "../types";
 import { deepMerge } from "../utils";
 
@@ -49,14 +50,38 @@ export class Serializer {
         `A transformer with id "${transformer.id}" is already registered, chose another one`,
       );
     }
+
     this.transformers.push(transformer);
     this.transformers = this.transformers.sort(
       (a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity),
     );
+
     this.transformersMap.set(transformer.id, transformer);
   };
 
-  registerClass = (name: string, clazz: Class) => {
-    this.registerTransformer(createClassTransformer(name, clazz));
+  deregisterTransformer = (
+    transformer: Seriall.Transformer | Seriall.Transformer.Id,
+  ) => {
+    const id = typeof transformer === "object" ? transformer.id : transformer;
+
+    if (!this.transformersMap.has(id)) {
+      throw new Error(
+        `No transformer found for id "${id}", cannot deregister it`,
+      );
+    }
+
+    this.transformers = this.transformers.filter(
+      (transformer) => transformer.id !== id,
+    );
+
+    this.transformersMap.delete(id);
+  };
+
+  registerClass = (name: string, clazz: typeof SerializableClass) => {
+    this.registerTransformer(createClassTransformer("$" + name, clazz));
+  };
+
+  deregisterClass = (name: string) => {
+    this.deregisterTransformer("$" + name);
   };
 }
