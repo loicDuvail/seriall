@@ -1,10 +1,15 @@
 import type { Seriall } from "../types";
 import { Transformer } from "./Transformer";
 
+const ENCODE = Symbol("encode");
+const DECODE = Symbol("decode");
+
+export const SYMBOLS = { ENCODE, DECODE };
+
 export abstract class SerializableClass {
   constructor(..._: any) {}
 
-  encode = () => {
+  [ENCODE] = () => {
     const encoded = {};
     for (const key of Reflect.ownKeys(this)) {
       const value = this[key];
@@ -15,7 +20,7 @@ export abstract class SerializableClass {
     return encoded;
   };
 
-  static decode = function <T extends typeof SerializableClass>(
+  static [DECODE] = function <T extends typeof SerializableClass>(
     this: T,
     registerNode: Parameters<Seriall.Transformer.Decoder<any, any, true>>[0],
   ) {
@@ -36,6 +41,6 @@ export const createClassTransformer = <T extends typeof SerializableClass>(
     priority: Transformer.PRIORITY.CUSTOM_CLASS,
     recursive: true,
     match: (node) => node instanceof clazz,
-    encode: (node) => node.encode(),
-    decode: (registerNode) => clazz.decode(registerNode),
+    encode: (node) => node[ENCODE](),
+    decode: (registerNode) => clazz[DECODE](registerNode),
   });
