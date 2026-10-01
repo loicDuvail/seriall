@@ -44,11 +44,7 @@ export class Serializer {
   deserialize = (data: string) => deserialize(data, this.transformersMap);
 
   registerTransformer = (transformer: Seriall.Transformer) => {
-    if (
-      this.transformers.some(
-        (registeredTransformer) => transformer.id === registeredTransformer.id,
-      )
-    ) {
+    if (this.transformersMap.has(transformer.id)) {
       throw new Error(
         `A transformer with id "${transformer.id}" is already registered, chose another one`,
       );

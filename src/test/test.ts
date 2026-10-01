@@ -1,7 +1,7 @@
 // AI generated tests
 
 import { describe, expect, it } from "@jest/globals";
-import { Serializer } from "../v2/Serializer";
+import { Serializer } from "..";
 
 const serializer = new Serializer();
 

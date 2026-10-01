@@ -1,62 +1,60 @@
 export namespace Seriall {
-  type ReservationPrefix = `$__`;
-  type Reserved<T extends string> = `${ReservationPrefix}${T}`;
-  type NotReserved<T extends string> =
-    T extends Seriall.Reserved<string> ? never : unknown;
-
-  // signature value cannot be a number,
-  // numbers are reserved for serialization referential integrity
-  type SignatureValue<T> = Exclude<T, number>;
-
-  type Signature = {
-    [K in Reserved<"serialized">]: SignatureValue<true>;
-  };
-
-  type Primitive = string | number | boolean;
-
   export type Serializable =
-    | Primitive
-    // symbol are currently not supported as object keys (as of v1.0.0)
-    | Record<Exclude<PropertyKey, symbol>, any>
+    | JsonPrimitive
+    | symbol
     | bigint
     | undefined
     | null
-    | symbol
+    | object
     | Serializable[];
 
-  type NativeRevivableClass = Reserved<
-    "Number" | "Date" | "RegExp" | "Set" | "Map" | "String" | "Boolean"
-  >;
+  export type JsonPrimitive = string | number | boolean;
 
-  type NativeRevivableType = Reserved<
-    "special_number" | "bigint" | "symbol" | "null" | "undefined"
-  >;
+  export namespace Serialized {
+    export type RevivableNode = { $: Transformer.Id; d?: number };
+    export type Node = JsonPrimitive | number[] | RevivableNode;
+    export type Graph = Node[];
+  }
 
-  type RevivableWithoutValue = NativeRevivableType &
-    Reserved<"null" | "undefined">;
+  namespace Transformer {
+    /** `NoData` is used to signify that no value should be passed to the Revivable node,
+     * which is then only described by its tag ($)*/
+    type NoData = undefined;
 
-  type ClassName = string;
+    type Encoded<Recursive extends boolean> = Recursive extends false
+      ? JsonPrimitive | object | Encoded<false>[] | NoData
+      : (JsonPrimitive | Encoded<true>)[] | object;
 
-  type Revivable<
-    T extends NativeRevivableClass | NativeRevivableType | ClassName,
-  > = Signature & {
-    type: T;
-  } & (T extends RevivableWithoutValue ? {} : { value: number });
+    type Id = string | number;
 
-  type SerializedGraph = (
-    | Primitive
-    | Record<string, number>
-    | number[]
-    | Revivable<NativeRevivableClass>
-    | Revivable<NativeRevivableType>
-    | Revivable<ClassName>
-  )[];
+    type Matcher<T extends Serializable> = (node: T) => boolean;
 
-  type SerializedNode = SerializedGraph[number];
+    type Encoder<
+      T extends Serializable,
+      O extends Encoded<Recursive>,
+      Recursive extends boolean,
+    > = (node: T) => O;
 
-  type ClassCodec<T extends new (...args: any[]) => object, E> = {
-    clazz: T;
-    encode?: undefined | ((instance: InstanceType<T>) => E);
-    decode?: undefined | ((encoded: E) => InstanceType<T>);
+    type Decoder<
+      T extends Encoded<Recursive>,
+      O extends Serializable,
+      Recursive extends boolean,
+    > = Recursive extends false
+      ? (node: T) => O
+      : (registerNode: (emptyNode: O) => T) => O;
+  }
+
+  export type Transformer<
+    Recursive extends boolean = boolean,
+    Decoded extends Serializable = Serializable,
+    Encoded extends Transformer.Encoded<Recursive> =
+      Transformer.Encoded<Recursive>,
+  > = {
+    id: Transformer.Id;
+    priority?: number;
+    recursive?: Recursive | undefined;
+    match: Transformer.Matcher<Decoded>;
+    encode: Transformer.Encoder<Decoded, Encoded, Recursive>;
+    decode: Transformer.Decoder<Encoded, Decoded, Recursive>;
   };
 }
