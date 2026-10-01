@@ -516,7 +516,10 @@ describe("serializer", () => {
           negativeZero: -0,
           symbol: Symbol("test"),
         },
+        self: {},
       };
+
+      value.self = value;
 
       const result = serializer.deserialize(
         serializer.serialize(value),
@@ -543,6 +546,7 @@ describe("serializer", () => {
       expect(result.values.negativeInfinity).toBe(-Infinity);
       expect(Object.is(result.values.negativeZero, -0)).toBe(true);
       expect(result.values.symbol.description).toBe("test");
+      expect(result.self).toBe(result);
     });
   });
 
@@ -574,30 +578,9 @@ describe("serializer", () => {
 
       expect(graph[0].first).toBe(graph[0].second);
     });
-
-    it("stores circular references as graph references", () => {
-      const value: { self?: unknown } = {};
-
-      value.self = value;
-
-      const graph = JSON.parse(serializer.serialize(value));
-
-      expect(graph[0].self).toBe(0);
-    });
   });
 
   describe("class registration", () => {
-    // it("rejects reserved class names", () => {
-    //   class TestEntity {
-    //     constructor() {}
-    //   }
-
-    //   expect(() => {
-    //     //@ts-expect-error
-    //     serializer.registerClass("$__custom", TestEntity);
-    //   }).toThrow('Class name "$__custom" is reserved for serialization.');
-    // });
-
     it("allows normal class names", () => {
       class TestEntity {}
 
@@ -609,11 +592,7 @@ describe("serializer", () => {
 
   describe("invalid serialized graphs", () => {
     it("throws for an out-of-range reference", () => {
-      const invalidGraph = JSON.stringify([
-        {
-          value: 999,
-        },
-      ]);
+      const invalidGraph = JSON.stringify([[999]]);
 
       expect(() => serializer.deserialize(invalidGraph)).toThrow(
         "Invalid serialized graph reference: 999",
@@ -621,11 +600,7 @@ describe("serializer", () => {
     });
 
     it("throws for a negative reference", () => {
-      const invalidGraph = JSON.stringify([
-        {
-          value: -1,
-        },
-      ]);
+      const invalidGraph = JSON.stringify([[-1]]);
 
       expect(() => serializer.deserialize(invalidGraph)).toThrow(
         "Invalid serialized graph reference: -1",

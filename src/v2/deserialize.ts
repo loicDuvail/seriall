@@ -1,10 +1,10 @@
 import type { Seriall } from "./types";
-import { isJsonPrimitive, type BidirectionalMap } from "./utils";
+import { isJsonPrimitive } from "./utils";
 import { DATA_KEY, SIGNATURE_KEY, NO_TRANSFORM_DATA } from "./const";
 
 export const deserialize = (
   data: string,
-  transformers: BidirectionalMap<
+  transformers: Map<
     Seriall.Transformer.Id,
     Seriall.Transformer<boolean, any, any>
   >,
@@ -17,10 +17,13 @@ export const deserialize = (
       return revived.get(index);
     }
 
+    if (graph.length <= index || index < 0) {
+      throw new Error(`Invalid serialized graph reference: ${index}`);
+    }
+
     const node = graph[index];
 
     if (isJsonPrimitive(node)) {
-      revived.set(index, node);
       return node;
     }
 
@@ -57,7 +60,7 @@ export const deserialize = (
       return decoded;
     }
 
-    if (transformer.recursive === false) {
+    if (!transformer.recursive) {
       const decoded = nonRecursiveTransformer.decode(reviveNode(dataId));
       revived.set(index, decoded);
       return decoded;

@@ -1,9 +1,9 @@
 import type { Seriall } from "./types";
 
 export const PRIORITY = {
-  PRIMITIVE: 0,
+  CUSTOM_CLASS: 0,
   NATIVE_CLASS: 1,
-  CUSTOM_CLASS: 2,
+  PRIMITIVE: 2,
   custom: (priority: number) =>
     (priority <= 0 ? 1 : priority) + PRIORITY.CUSTOM_CLASS,
 } as const;
@@ -14,6 +14,7 @@ export class Transformer<
   Options extends { recursive: boolean } = { recursive: false },
 > implements Seriall.Transformer<Options["recursive"], Decoded, Encoded> {
   declare id: Seriall.Transformer.Id;
+  declare recursive?: Options["recursive"] | undefined;
   declare match: Seriall.Transformer.Matcher<Seriall.Serializable>;
   declare encode: Seriall.Transformer.Encoder<
     Decoded,
@@ -33,8 +34,10 @@ export class Transformer<
     encode,
     decode,
     priority,
+    recursive,
   }: Seriall.Transformer<Options["recursive"], Decoded, Encoded>) {
     this.id = id;
+    this.recursive = recursive;
     this.match = match;
     this.encode = encode;
     this.decode = decode;

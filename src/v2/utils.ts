@@ -37,30 +37,6 @@ export const decodeSpecialNumber = (value: 0 | 1 | 2 | 3) => {
   }
 };
 
-export class BidirectionalMap<K, V> {
-  map = new Map<K, V>();
-  revMap = new Map<V, K>();
-
-  constructor(entries?: ConstructorParameters<typeof Map<K, V>>[0]) {
-    if (!entries) return;
-
-    this.map = new Map(entries);
-    this.map.forEach((value, key) => this.revMap.set(value, key));
-  }
-
-  set = (key: K, value: V) => {
-    this.map.set(key, value);
-    this.revMap.set(value, key);
-  };
-
-  get = this.map.get.bind(this.map);
-  revGet = this.revMap.get.bind(this.revMap);
-  find = this.map.values().find.bind(this.map.values());
-  has = this.map.has.bind(this.map);
-  revHas = this.revMap.has.bind(this.revMap);
-  some = this.map.values().some.bind(this.map.values());
-}
-
 export type Class = new (...args: any[]) => any;
 
 export type DeepOptional<T> = {

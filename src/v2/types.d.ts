@@ -52,7 +52,7 @@ export namespace Seriall {
   > = {
     id: Transformer.Id;
     priority?: number;
-    recursive?: Recursive;
+    recursive?: Recursive | undefined;
     match: Transformer.Matcher<Decoded>;
     encode: Transformer.Encoder<Decoded, Encoded, Recursive>;
     decode: Transformer.Decoder<Encoded, Decoded, Recursive>;

@@ -6,12 +6,7 @@ import {
 import { deserialize } from "./deserialize";
 import { serialize } from "./serialize";
 import type { Seriall } from "./types";
-import {
-  BidirectionalMap,
-  deepMerge,
-  type Class,
-  type DeepOptional,
-} from "./utils";
+import { deepMerge, type Class, type DeepOptional } from "./utils";
 
 type SerializerOptions = {
   enable: {
@@ -30,12 +25,9 @@ const defaultOptions: SerializerOptions = {
 };
 
 export class Serializer {
-  private transformers: BidirectionalMap<
-    Seriall.Transformer.Id,
-    Seriall.Transformer
-  > = new BidirectionalMap();
-  private registeredClasses: BidirectionalMap<string, Class> =
-    new BidirectionalMap();
+  private transformers: Seriall.Transformer[] = [];
+  private transformersMap: Map<Seriall.Transformer.Id, Seriall.Transformer> =
+    new Map();
 
   constructor(options: DeepOptional<SerializerOptions> = {}) {
     const opt = deepMerge<SerializerOptions>(defaultOptions, options);
@@ -49,15 +41,23 @@ export class Serializer {
   serialize = (data: Seriall.Serializable) =>
     serialize(data, this.transformers);
 
-  deserialize = (data: string) => deserialize(data, this.transformers);
+  deserialize = (data: string) => deserialize(data, this.transformersMap);
 
   registerTransformer = (transformer: Seriall.Transformer) => {
-    if (this.transformers.has(transformer.id)) {
+    if (
+      this.transformers.some(
+        (registeredTransformer) => transformer.id === registeredTransformer.id,
+      )
+    ) {
       throw new Error(
         `A transformer with id "${transformer.id}" is already registered, chose another one`,
       );
     }
-    this.transformers.set(transformer.id, transformer);
+    this.transformers.push(transformer);
+    this.transformers = this.transformers.sort(
+      (a, b) => (a.priority || Infinity) - (b.priority || Infinity),
+    );
+    this.transformersMap.set(transformer.id, transformer);
   };
 
   registerClass = (name: string, clazz: Class) => {
