@@ -1,11 +1,22 @@
 import * as esbuild from "esbuild";
 
-esbuild.build({
-  entryPoints: ["./src/index.ts"],
+const common = {
+  entryPoints: ["src/index.ts"],
   bundle: true,
+  sourcemap: true,
   minify: false,
-  sourcemap: false,
-  outfile: "./dist/bundle.js",
-  target: ["esnext"],
-  loader: { ".ts": "ts" },
-});
+};
+
+await Promise.all([
+  esbuild.build({
+    ...common,
+    format: "esm",
+    outfile: "dist/index.js",
+  }),
+
+  esbuild.build({
+    ...common,
+    format: "cjs",
+    outfile: "dist/index.cjs",
+  }),
+]);

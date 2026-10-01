@@ -1,10 +1,22 @@
 {
   "name": "seriall",
-  "version": "0.1.0",
-  "description": "",
-  "main": "dist/bundle.js",
+  "version": "1.0.0",
+  "description": "A flexible js serializer, capable of serializing/deserializing any js data, while preserving referential integrity, non-json-primitive values, and even custom class instances",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "node ./esbuild.js",
+    "build": "npm run build:js && npm run build:types",
+    "build:js": "node ./esbuild.js",
+    "build:types": "rollup -c",
     "build:test": "node ./esbuild.test.js",
     "test": "npm run build:test && npx jest"
   },
@@ -16,13 +28,18 @@
     "referential",
     "integrity"
   ],
-  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loicDuvail/seriall.git"
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^26.5.1",
     "esbuild": "^0.28.2",
     "jest": "^30.5.1",
-    "ts-jest": "^29.4.12",
+    "rollup": "^4.63.6",
+    "rollup-plugin-dts": "^6.5.1",
     "typescript": "^6.0.3"
   }
 }
