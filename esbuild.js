@@ -3,7 +3,7 @@ import * as esbuild from "esbuild";
 const common = {
   entryPoints: ["src/index.ts"],
   bundle: true,
-  sourcemap: true,
+  sourcemap: false,
   minify: false,
 };
 
@@ -11,7 +11,7 @@ await Promise.all([
   esbuild.build({
     ...common,
     format: "esm",
-    outfile: "dist/index.js",
+    outfile: "dist/index.mjs",
   }),
 
   esbuild.build({
