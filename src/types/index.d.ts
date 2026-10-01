@@ -1,2 +1,2 @@
 export * from "./Seriall";
-export * from "./util";
+export * from "./utils";
