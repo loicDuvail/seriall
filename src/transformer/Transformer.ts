@@ -6,20 +6,14 @@ export class Transformer<
   Encoded extends Seriall.Transformer.Encoded<Options["recursive"]>,
   Options extends { recursive: boolean } = { recursive: false },
 > implements Seriall.Transformer<Options["recursive"], Decoded, Encoded> {
-  declare id: Seriall.Transformer.Id;
-  declare recursive?: Options["recursive"] | undefined;
-  declare match: Seriall.Transformer.Matcher<Seriall.Serializable>;
-  declare encode: Seriall.Transformer.Encoder<
-    Decoded,
-    Encoded,
-    Options["recursive"]
-  >;
-  declare decode: Seriall.Transformer.Decoder<
-    Encoded,
-    Decoded,
-    Options["recursive"]
-  >;
-  declare priority: number;
+  id: Seriall.Transformer.Id;
+  recursive?: Options["recursive"] | undefined;
+  match: Seriall.Transformer.Matcher<Seriall.Serializable>;
+  encode: Seriall.Transformer.Encoder<Decoded, Encoded, Options["recursive"]>;
+  decode: Seriall.Transformer.Decoder<Encoded, Decoded, Options["recursive"]>;
+  priority: number;
+
+  static PRIORITY = PRIORITY;
 
   constructor({
     id,
