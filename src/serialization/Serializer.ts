@@ -1,12 +1,12 @@
+import { deserialize, serialize } from ".";
 import {
   createClassTransformer,
   nativeClassesTransformers,
   primitivesTransformers,
-} from "./builtin.transformers";
-import { deserialize } from "./deserialize";
-import { serialize } from "./serialize";
-import type { Seriall } from "./types";
-import { deepMerge, type Class, type DeepOptional } from "./utils";
+} from "../transformer";
+import type { Class, DeepOptional } from "../types";
+import type { Seriall } from "../types";
+import { deepMerge } from "../utils";
 
 type SerializerOptions = {
   enable: {

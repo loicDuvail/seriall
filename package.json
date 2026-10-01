@@ -2,7 +2,7 @@
   "name": "seriall",
   "version": "0.1.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/bundle.js",
   "scripts": {
     "build": "node ./esbuild.js",
     "build:test": "node ./esbuild.test.js",
@@ -10,6 +10,7 @@
   },
   "keywords": [
     "serializer",
+    "serialization",
     "circular",
     "json",
     "referential",

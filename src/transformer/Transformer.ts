@@ -1,5 +1,5 @@
-import { PRIORITY } from "./const";
-import type { Seriall } from "./types";
+import { PRIORITY } from "../const";
+import type { Seriall } from "../types";
 
 export class Transformer<
   Decoded extends Seriall.Serializable,

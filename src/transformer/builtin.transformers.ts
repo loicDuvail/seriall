@@ -1,12 +1,12 @@
-import { NO_TRANSFORM_DATA, PRIORITY } from "./const";
+import { NO_TRANSFORM_DATA, PRIORITY } from "../const";
 import { Transformer } from "./Transformer";
-import type { Seriall } from "./types";
+import type { Seriall } from "../types/Seriall";
 import {
   decodeSpecialNumber,
   encodeSpecialNumber,
   isSpecialNumber,
-  type Class,
-} from "./utils";
+} from "../utils";
+import type { Class } from "../types";
 
 type TransformerPack = Seriall.Transformer[];
 

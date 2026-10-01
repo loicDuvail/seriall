@@ -1,4 +1,4 @@
-import type { Seriall } from "./types";
+import type { Seriall } from "../types/Seriall";
 
 export const SIGNATURE_KEY: Extract<
   keyof Seriall.Serialized.RevivableNode,

@@ -1,6 +1,6 @@
-import type { Seriall } from "./types";
-import { isJsonPrimitive } from "./utils";
-import { DATA_KEY, SIGNATURE_KEY, NO_TRANSFORM_DATA } from "./const";
+import type { Seriall } from "../types/Seriall";
+import { isJsonPrimitive } from "../utils/json.utils";
+import { DATA_KEY, SIGNATURE_KEY, NO_TRANSFORM_DATA } from "../const";
 
 export const deserialize = (
   data: string,

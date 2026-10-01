@@ -5,7 +5,7 @@ esbuild.build({
   bundle: true,
   minify: false,
   sourcemap: false,
-  outfile: "./test/test.js",
+  outfile: "./dist/test.js",
   target: ["esnext"],
   external: ["@jest/globals"],
   loader: { ".ts": "ts" },
