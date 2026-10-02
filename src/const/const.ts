@@ -8,6 +8,9 @@ export const DATA_KEY: Extract<keyof Seriall.Serialized.RevivableNode, "d"> =
   "d";
 export const NO_TRANSFORM_DATA: Seriall.Transformer.NoData = undefined;
 
+export const PROTOCOL_VERSION: Seriall.MetaData["v"] = 1;
+export const LIB: Seriall.MetaData["lib"] = "seriall";
+
 export const PRIORITY = {
   CUSTOM_CLASS: 0,
   NATIVE_CLASS: 1,

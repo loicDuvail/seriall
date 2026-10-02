@@ -10,11 +10,18 @@ export namespace Seriall {
 
   export type JsonPrimitive = string | number | boolean;
 
+  export type MetaData = {
+    lib: "seriall";
+    v: 1;
+  };
+
   export namespace Serialized {
     export type RevivableNode = { $: Transformer.Id; d?: number };
     export type Node = JsonPrimitive | number[] | RevivableNode;
     export type Graph = Node[];
   }
+
+  export type Serialized = MetaData & { d: Seriall.Serialized.Graph };
 
   namespace Transformer {
     /** `NoData` is used to signify that no value should be passed to the Revivable node,

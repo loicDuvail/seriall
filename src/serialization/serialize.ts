@@ -1,4 +1,4 @@
-import { NO_TRANSFORM_DATA } from "../const";
+import { LIB, NO_TRANSFORM_DATA, PROTOCOL_VERSION } from "../const";
 import type { Seriall } from "../types/Seriall";
 import { isJsonPrimitive } from "../utils";
 
@@ -57,5 +57,11 @@ export const serialize = (
 
   addNodeToGraph(data);
 
-  return JSON.stringify(graph);
+  const serialized: Seriall.Serialized = {
+    lib: LIB,
+    v: PROTOCOL_VERSION,
+    d: graph,
+  };
+
+  return JSON.stringify(serialized);
 };

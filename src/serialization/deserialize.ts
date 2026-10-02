@@ -1,6 +1,12 @@
 import type { Seriall } from "../types/Seriall";
 import { isJsonPrimitive } from "../utils/json.utils";
-import { DATA_KEY, SIGNATURE_KEY, NO_TRANSFORM_DATA } from "../const";
+import {
+  DATA_KEY,
+  SIGNATURE_KEY,
+  NO_TRANSFORM_DATA,
+  LIB,
+  PROTOCOL_VERSION,
+} from "../const";
 
 export const deserialize = (
   data: string,
@@ -9,7 +15,25 @@ export const deserialize = (
     Seriall.Transformer<boolean, any, any>
   >,
 ) => {
-  const graph: Seriall.Serialized.Graph = JSON.parse(data);
+  const { lib, v, d } = JSON.parse(data);
+
+  if (lib !== LIB) {
+    throw new Error(
+      `Can't deserialize data, invalid lib metadata. Expected "${LIB}", got "${lib}"`,
+    );
+  }
+
+  if (v !== PROTOCOL_VERSION) {
+    throw new Error(
+      `Can't deserialize data, invalid protocol version. Expected ${PROTOCOL_VERSION}, got ${v}`,
+    );
+  }
+
+  if (!Array.isArray(d)) {
+    throw new Error("Invalid seriall payload: 'd' must be an array");
+  }
+
+  const graph: Seriall.Serialized.Graph = d;
   const revived: Map<number, Seriall.Serializable> = new Map();
 
   const reviveNode = (index: number) => {
