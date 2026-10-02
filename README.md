@@ -26,6 +26,8 @@ It is **highly configurable**, through the usage of `transformers`
 
 ## Table of Contents
 
+## Table of Contents
+
 - [TL;DR](#tldr)
 - [📦 Installation](#installation)
 - [🚀 Usage](#usage)
@@ -34,6 +36,8 @@ It is **highly configurable**, through the usage of `transformers`
 - [Supported](#supported)
 - [🧠 Advanced Usages](#advanced-usages)
   - [Symbols](#symbols)
+  - [Transformers](#transformers)
+  - [Custom Class Serialization](#custom-class-serialization)
 - [Import Notes](#import-notes)
   - [JavaScript](#javascript)
   - [Typescript](#typescript)
@@ -231,6 +235,83 @@ console.log(restored.key === restoredKey);
 ```
 
 This works because Seriall preserves the object graph, rather than simply converting values to JSON.
+
+### Transformers
+
+Seriall's serialization logic is built around **transformers**.
+
+A transformer tells Seriall how to:
+
+- identify a specific type of value
+- encode it into serializable data
+- decode that data back into the original type
+
+This makes Seriall highly configurable and allows it to support types that are not supported out-of-the-box.
+
+A transformer can be registered using `registerTransformer()`:
+
+```ts
+import { Serializer, Transformer } from "seriall";
+
+const serializer = new Serializer();
+
+const transformer = new Transformer({
+  id: "url",
+  priority: Transformer.PRIORITY.CUSTOM_CLASS,
+  match: (value) => value instanceof URL,
+  encode: (value) => value.toString(),
+  decode: (value) => new URL(value),
+});
+
+serializer.registerTransformer(transformer);
+
+const original = {
+  website: new URL("https://example.com"),
+};
+
+const serialized = serializer.serialize(original);
+const restored = serializer.deserialize(serialized);
+
+console.log(restored.website instanceof URL);
+// true
+
+console.log(restored.website.href);
+// "https://example.com/"
+```
+
+### Custom Class Serialization
+
+The `registerClass()` mechanism introduced earlier is actually built on top of Seriall's transformer system.
+
+In other words, **a registered class is ultimately just a transformer**.
+
+This means that the class serialization mechanism can be reproduced and customized using `Transformer` directly when more control is needed.
+
+By default, `SerializableClass` provides the necessary encoding and decoding behavior.
+
+Under the hood, it looks something like:
+
+```ts
+import { SYMBOLS } from "seriall";
+
+export abstract class SerializableClass {
+  [ENCODE]() {...};
+  static [DECODE] = function (this, registerNode) {...};
+};
+```
+
+So you can actually overwrite a class encoding/decoding methods like this:
+
+```ts
+import { SerializableClass, SYMBOLS } from "seriall";
+
+class MyClass extends SerializableClass {
+  [SYMBOLS.ENCODE]() {
+    console.log("Calling a custom encoding function");
+    return super[SYMBOLS.ENCODE]();
+  }
+}
+```
 
 ## Import Notes
 
