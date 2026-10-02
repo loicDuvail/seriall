@@ -4,9 +4,9 @@
 
 **Seriall serializes JavaScript object graphs while preserving references, circular references, special primitive values, built-in types, and registered custom classes.**
 
-The only **unsuported datatypes** out-of-the-box are:
+**The only JavaScript values not supported out-of-the-box are:**
 
-- ⚠️ Custom classes instances with **js-private fields** (prefixed with `#`),
+- ⚠️ Custom classes instances with **JavaScript private fields** (`#field`),
 
   there are still configurable workarounds, just no out-of-the-box solution
 
@@ -224,14 +224,14 @@ It also exposes both `.d.cts` and `.d.mts` declaration files, and provides there
 
 ### JavaScript
 
-**CommonJS**
+**ES Module**
 
 ```ts
 // demo.mjs
 import { Serializer } from "seriall";
 ```
 
-**ES Module**
+**CommonJS**
 
 ```ts
 // demo.cjs
@@ -240,7 +240,7 @@ const { Serializer } = require("seriall");
 
 ### Typescript
 
-**CommonJS**
+**ES Module**
 
 ```ts
 // demo.mts
@@ -248,7 +248,7 @@ import { Serializer } from "seriall";
 // Serializer is properly typed
 ```
 
-**ES Module**
+**CommonJS**
 
 either
 
@@ -266,3 +266,12 @@ or
 const { Serializer } = require("seriall") as typeof import("seriall");
 // Serializer is now typed properly
 ```
+
+## Protocol Versionning
+
+In the advent of a **breaking protocol change**, serializers running on different platforms (e.g client vs server) could
+go temporarily out of sync regarding their serialization protocol.
+
+To handle this case, and avoid deserialization data corruption, **Seriall implements protocol version checking before deserializing data**.
+
+The protocol is however **not expected to change**, and especially not frequently.
