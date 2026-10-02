@@ -66,7 +66,10 @@ export const primitivesTransformers: TransformerPack = [
     encode: (node) => {
       const obj: [PropertyKey, Seriall.Serializable][] = [];
       for (const key of Reflect.ownKeys(node)) {
-        obj.push([key, node[key]]);
+        const value = node[key];
+        if (typeof value !== "function") {
+          obj.push([key, node[key]]);
+        }
       }
       return obj;
     },
