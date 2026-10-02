@@ -33,11 +33,14 @@ Inside an npm project: `npm install seriall` or `yarn install seriall`
 ### Basic usage
 
 ```ts
+// example.ts
+
 import { Serializer } from "seriall";
 
 const { serialize, deserialize } = new Serializer();
 
 // ------- create test data -------
+
 const nested = { name: "Gömböc" };
 
 const myData: any = {
@@ -48,6 +51,7 @@ const myData: any = {
 myData.self = myData;
 
 // ------- serialize data -------
+
 const str = serialize(myData);
 
 // -------  -------  -------
@@ -58,7 +62,7 @@ const revivedData = deserialize(str);
 
 console.log(revivedData.self === revivedData);
 // true
-console.lof(revivedData.nestedObjects[0] === revivedData.nestedObjects[1]);
+console.log(revivedData.nestedObjects[0] === revivedData.nestedObjects[1]);
 // true
 console.log(revivedData.nestedObjects[0]);
 // {name: "Gömböc"}
@@ -66,15 +70,19 @@ console.log(revivedData.name);
 // It works!
 ```
 
-### Serializing custom classes
+### Registering custom classes
 
 ```ts
+// example.ts
+
 import { Serializer, SerializableClass } from "seriall";
 
 // ------- create a new serializer -------
+
 const serializer = new Serializer();
 
 // ------- create and register custom classes -------
+
 class Address extends SerializableClass {
   country: string;
   city: string;
@@ -104,6 +112,7 @@ class User extends SerializableClass {
 serializer.registerClass("usr", User);
 
 // ------- create test data -------
+
 const mary = new User("Mary");
 const john = new User("John");
 const paris = new Address("France", "Paris");
