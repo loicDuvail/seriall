@@ -162,6 +162,58 @@ and boxed primitives
 
 - `String`, `Number`, `Boolean`
 
+## Advanced Usages
+
+### Symbols
+
+Seriall also preserves symbol identity, including symbols used as object keys. This means you can safely serialize and deserialize objects that use symbols for indexing:
+
+```ts
+import { Serializer } from "seriall";
+
+const serializer = new Serializer();
+
+const secretKey = Symbol("secret");
+
+const data = {
+  [secretKey]: "Hello from a symbol key!",
+};
+
+const serialized = serializer.serialize(data);
+const deserialized = serializer.deserialize(serialized);
+
+const restoredKey = Object.getOwnPropertySymbols(deserialized)[0];
+
+console.log(deserialized[restoredKey]);
+// "Hello from a symbol key!"
+
+console.log(restoredKey.description);
+// "secret"
+```
+
+Symbol identity is also preserved across references:
+
+```ts
+const key = Symbol("key");
+
+const data = {
+  [key]: "value",
+  key,
+};
+
+const restored = serializer.deserialize(serializer.serialize(data));
+
+const restoredKey = Object.getOwnPropertySymbols(restored)[0];
+
+console.log(restored[restoredKey]);
+// "value"
+
+console.log(restored.key === restoredKey);
+// true
+```
+
+This works because Seriall preserves the object graph, rather than simply converting values to JSON.
+
 ## Import Notes
 
 Seriall is exported in both cjs and mjs.
