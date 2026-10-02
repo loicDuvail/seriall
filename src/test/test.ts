@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "@jest/globals";
 import { Serializer, SerializableClass } from "..";
+import { LIB, PROTOCOL_VERSION } from "../const";
 
 const serializer = new Serializer();
 
@@ -574,7 +575,7 @@ describe("serializer", () => {
         second: shared,
       };
 
-      const graph = JSON.parse(serializer.serialize(value));
+      const { d: graph } = JSON.parse(serializer.serialize(value));
 
       expect(graph[0].first).toBe(graph[0].second);
     });
@@ -659,7 +660,11 @@ describe("serializer", () => {
 
   describe("invalid serialized graphs", () => {
     it("throws for an out-of-range reference", () => {
-      const invalidGraph = JSON.stringify([[999]]);
+      const invalidGraph = JSON.stringify({
+        lib: LIB,
+        v: PROTOCOL_VERSION,
+        d: [[999]],
+      });
 
       expect(() => serializer.deserialize(invalidGraph)).toThrow(
         "Invalid serialized graph reference: 999",
@@ -667,7 +672,11 @@ describe("serializer", () => {
     });
 
     it("throws for a negative reference", () => {
-      const invalidGraph = JSON.stringify([[-1]]);
+      const invalidGraph = JSON.stringify({
+        lib: LIB,
+        v: PROTOCOL_VERSION,
+        d: [[-1]],
+      });
 
       expect(() => serializer.deserialize(invalidGraph)).toThrow(
         "Invalid serialized graph reference: -1",
