@@ -284,13 +284,13 @@ The protocol is however **not expected to change**, and especially not frequentl
 
 ### Stable top level structure:
 
-every serialized data consist of a json string, structured like so
+every serialized data consist of a json string, structured like this:
 
 ```ts
 {
   "lib": "seriall", // stable
-  "v": 1, // protocol version
-  "d": [...] // serialized data
+  "v": number, // protocol version
+  "d": any // serialized data
 }
 ```
 
@@ -298,4 +298,4 @@ every serialized data consist of a json string, structured like so
 
 - `v` identifies the protocol version and may change if a breaking protocol change is introduced.
 
-- `d` contains the serialized object graph and may change between protocol versions.
+- `d` contains the serialized object graph and may change format between protocol versions.
