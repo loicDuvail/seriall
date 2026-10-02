@@ -24,6 +24,24 @@ It **can out-of-the-box register custom classes**, and recreates their instances
 
 It is **highly configurable**, through the usage of `transformers`
 
+## Table of Contents
+
+- [TL;DR](#tldr)
+- [📦 Installation](#installation)
+- [🚀 Usage](#usage)
+  - [Basic usage](#basic-usage)
+  - [Registering custom classes](#registering-custom-classes)
+- [Supported](#supported)
+- [🧠 Advanced Usages](#advanced-usages)
+  - [Symbols](#symbols)
+- [Import Notes](#import-notes)
+  - [JavaScript](#javascript)
+  - [Typescript](#typescript)
+- [🔄 Protocol Versioning](#protocol-versioning)
+  - [Motive](#motive)
+  - [Solution](#solution)
+  - [Stable top-level structure](#stable-top-level-structure)
+
 ## Installation
 
 Inside an npm project: `npm install seriall` or `yarn install seriall`
