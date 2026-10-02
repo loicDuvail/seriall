@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-**Seriall is a JavaScript data serializer, which can serialize into a string, and deserialize almost any javascript data out of the box**
+**Seriall serializes JavaScript object graphs while preserving references, circular references, special primitive values, built-in types, and registered custom classes.**
 
 The only **unsuported datatypes** out-of-the-box are:
 
@@ -16,7 +16,7 @@ The only **unsuported datatypes** out-of-the-box are:
 
   even though even this is theoretically configurable
 
-It **does not use `eval`**, and is thus safe from any code injection attack.
+Seriall **does not use `eval` or dynamically execute serialized JavaScript code**. Serialized functions and classes are not supported by default, which helps keep deserialization data-only.
 
 It **conserves refenrential integrity**, so circularly referenced arrays/objects, and cross referenced arrays/objects can be serialized
 
@@ -154,9 +154,13 @@ as well as JS-specific data-types:
 
 - `Symbols`, `BigInts`
 
-and native classes instances
+native classes instances
 
-- `Date`, `RegEx`, `Set`, `Map`, `String`, `Number`, `Boolean`
+- `Date`, `RegExp`, `Set`, `Map`
+
+and boxed primitives
+
+- `String`, `Number`, `Boolean`
 
 ## Import Notes
 
