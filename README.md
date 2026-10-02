@@ -267,11 +267,35 @@ const { Serializer } = require("seriall") as typeof import("seriall");
 // Serializer is now typed properly
 ```
 
-## Protocol Versionning
+## Protocol Versioning
+
+### Motive
 
 In the advent of a **breaking protocol change**, serializers running on different platforms (e.g client vs server) could
 go temporarily out of sync regarding their serialization protocol.
 
-To handle this case, and avoid deserialization data corruption, **Seriall implements protocol version checking before deserializing data**.
+### Solution
+
+To handle this case and prevent incompatible data from being deserialized incorrectly, **Seriall checks the protocol version before deserializing data** .
+
+⚠️ A protocol mismatch will result in a error being thrown
 
 The protocol is however **not expected to change**, and especially not frequently.
+
+### Stable top level structure:
+
+every serialized data consist of a json string, structured like so
+
+```ts
+{
+  "lib": "seriall", // stable
+  "v": 1, // protocol version
+  "d": [...] // serialized data
+}
+```
+
+- `lib` identifies the serialization format and is expected to remain stable.
+
+- `v` identifies the protocol version and may change if a breaking protocol change is introduced.
+
+- `d` contains the serialized object graph and may change between protocol versions.
