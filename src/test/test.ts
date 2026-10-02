@@ -637,9 +637,6 @@ describe("serializer", () => {
       const serialized = serializer.serialize(parent);
       const revived = serializer.deserialize(serialized);
 
-      console.log(serialized);
-      console.log(revived.children);
-
       // Instances are restored
       expect(revived).toBeInstanceOf(TestEntity);
       expect(revived.children[0]).toBeInstanceOf(TestEntity);
