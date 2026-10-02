@@ -25,7 +25,9 @@
     "build:js": "node ./esbuild.js",
     "build:types": "rollup -c",
     "build:test": "node ./esbuild.test.js",
-    "test": "npm run build:test && npx jest"
+    "build:benchmark": "node ./esbuild.benchmark.js",
+    "test": "npm run build:test && npx jest",
+    "benchmark": "npm run build:benchmark && node benchmark/benchmark.js /"
   },
   "keywords": [
     "serializer",
@@ -43,10 +45,13 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^26.5.1",
+    "devalue": "^6.0.2",
     "esbuild": "^0.28.2",
+    "flatted": "^3.4.4",
     "jest": "^30.5.1",
     "rollup": "^4.63.6",
     "rollup-plugin-dts": "^6.5.1",
+    "superjson": "^2.2.6",
     "typescript": "^6.0.3"
   }
 }
