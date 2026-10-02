@@ -20,7 +20,10 @@ export const primitivesTransformers: TransformerPack = [
       f: Symbol.keyFor(node) === undefined ? 0 : 1,
     }),
     decode: (encoded) => {
-      if (encoded.f === 1 && encoded.d) {
+      if (encoded.f === 1) {
+        // Symbol.for(undefined) is valid at runtime and behaves as
+        // Symbol.for("undefined"), despite TypeScript's stricter signature.
+        // @ts-ignore
         return Symbol.for(encoded.d);
       }
       return Symbol(encoded.d);
