@@ -9,7 +9,7 @@ export const SYMBOLS = { ENCODE, DECODE };
 export abstract class SerializableClass {
   constructor(..._: any) {}
 
-  [ENCODE] = () => {
+  [ENCODE]() {
     const encoded = {};
     for (const key of Reflect.ownKeys(this)) {
       const value = this[key];
@@ -18,7 +18,7 @@ export abstract class SerializableClass {
       }
     }
     return encoded;
-  };
+  }
 
   static [DECODE] = function <T extends typeof SerializableClass>(
     this: T,
