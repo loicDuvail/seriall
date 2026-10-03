@@ -26,8 +26,6 @@ It is **highly configurable**, through the usage of `transformers`
 
 ## Table of Contents
 
-## Table of Contents
-
 - [TL;DR](#tldr)
 - [📦 Installation](#installation)
 - [🚀 Usage](#usage)
