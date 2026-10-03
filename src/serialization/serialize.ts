@@ -31,12 +31,12 @@ export const serialize = (
     );
 
     if (transformer) {
-      graph.push({ $: transformer.id });
+      graph.push([transformer.id]);
       const revivable = graph[id] as Seriall.Serialized.RevivableNode;
       const encoded = transformer.encode(node);
       if (encoded !== NO_TRANSFORM_DATA) {
         const dataId = addNodeToGraph(encoded);
-        revivable.d = dataId;
+        revivable[1] = dataId;
       }
       return id;
     }
@@ -47,6 +47,16 @@ export const serialize = (
       for (const element of node) {
         const elementId = addNodeToGraph(element);
         arr.push(elementId);
+      }
+      return id;
+    }
+
+    if (typeof node === "object") {
+      graph.push({});
+      const obj = graph[id] as Object;
+      for (const key in node) {
+        const elementId = addNodeToGraph(node[key]);
+        obj[key] = elementId;
       }
       return id;
     }

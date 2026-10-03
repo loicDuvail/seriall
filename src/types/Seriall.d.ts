@@ -8,7 +8,7 @@ export namespace Seriall {
     | object
     | Serializable[];
 
-  export type JsonPrimitive = string | number | boolean;
+  export type JsonPrimitive = string | number | boolean | null;
 
   export type MetaData = {
     lib: "seriall";
@@ -17,7 +17,11 @@ export namespace Seriall {
 
   export namespace Serialized {
     export type RevivableNode = { $: Transformer.Id; d?: number };
-    export type Node = JsonPrimitive | number[] | RevivableNode;
+    export type Node =
+      | JsonPrimitive
+      | number[]
+      | RevivableNode
+      | Record<string | number, any>;
     export type Graph = Node[];
   }
 

@@ -51,7 +51,16 @@ export const deserialize = (
       return node;
     }
 
-    if (Array.isArray(node)) {
+    if (!Array.isArray(node) && typeof node === "object") {
+      const obj = {};
+      revived.set(index, obj);
+      for (const key in node) {
+        obj[key] = reviveNode(node[key]);
+      }
+      return obj;
+    }
+
+    if (Array.isArray(node) && typeof node[0] !== "string") {
       const arr: Seriall.Serializable[] = [];
       revived.set(index, arr);
       for (const element of node) {
@@ -60,7 +69,7 @@ export const deserialize = (
       return arr;
     }
 
-    const transformerId = node[SIGNATURE_KEY];
+    const transformerId = node[0];
     const transformer = transformers.get(transformerId);
 
     if (!transformerId) {
@@ -76,7 +85,7 @@ export const deserialize = (
       any
     >;
 
-    const dataId = node[DATA_KEY];
+    const dataId = node[1];
 
     if (dataId === undefined) {
       const decoded = nonRecursiveTransformer.decode(NO_TRANSFORM_DATA);
