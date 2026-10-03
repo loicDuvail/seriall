@@ -43,13 +43,6 @@ export const primitivesTransformers: TransformerPack = [
     encode: () => NO_TRANSFORM_DATA,
     decode: () => undefined,
   }),
-  new Transformer<null, Seriall.Transformer.NoData>({
-    id: "nul",
-    priority: Transformer.PRIORITY.PRIMITIVE,
-    match: (node) => node === null,
-    encode: () => NO_TRANSFORM_DATA,
-    decode: () => null,
-  }),
   new Transformer<bigint, string>({
     id: "big",
     priority: Transformer.PRIORITY.PRIMITIVE,

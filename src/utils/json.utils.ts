@@ -7,5 +7,7 @@ export const isJsonPrimitive = (
   if (typeof value === "number") {
     return !isSpecialNumber(value);
   }
-  return typeof value === "string" || typeof value === "boolean";
+  return (
+    typeof value === "string" || typeof value === "boolean" || value === null
+  );
 };
