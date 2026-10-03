@@ -4,3 +4,4 @@ test
 *.tgz
 benchmark
 !*/**/benchmark
+package-lock.json
