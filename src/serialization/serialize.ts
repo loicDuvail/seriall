@@ -1,4 +1,10 @@
-import { LIB, NO_TRANSFORM_DATA, PROTOCOL_VERSION } from "../const";
+import {
+  DATA_INDEX,
+  LIB,
+  NO_TRANSFORM_DATA,
+  PROTOCOL_VERSION,
+  SIGNATURE_INDEX,
+} from "../const";
 import type { Seriall } from "../types/Seriall";
 import { isJsonPrimitive } from "../utils";
 
@@ -31,12 +37,13 @@ export const serialize = (
     );
 
     if (transformer) {
-      graph.push([transformer.id]);
-      const revivable = graph[id] as Seriall.Serialized.RevivableNode;
+      graph.push([]);
+      const revivable = graph[id] as Seriall.Serialized.TransformedNode;
+      revivable[SIGNATURE_INDEX] = transformer.id;
       const encoded = transformer.encode(node);
       if (encoded !== NO_TRANSFORM_DATA) {
         const dataId = addNodeToGraph(encoded);
-        revivable[1] = dataId;
+        revivable[DATA_INDEX] = dataId;
       }
       return id;
     }

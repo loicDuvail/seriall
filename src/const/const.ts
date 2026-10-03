@@ -1,11 +1,8 @@
 import type { Seriall } from "../types/Seriall";
 
-export const SIGNATURE_KEY: Extract<
-  keyof Seriall.Serialized.RevivableNode,
-  "$"
-> = "$";
-export const DATA_KEY: Extract<keyof Seriall.Serialized.RevivableNode, "d"> =
-  "d";
+export const SIGNATURE_INDEX = 0 as const;
+export const DATA_INDEX = 1 as const;
+
 export const NO_TRANSFORM_DATA: Seriall.Transformer.NoData = undefined;
 
 export const PROTOCOL_VERSION: Seriall.MetaData["v"] = 1;

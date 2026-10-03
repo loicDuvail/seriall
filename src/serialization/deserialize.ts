@@ -1,11 +1,11 @@
 import type { Seriall } from "../types/Seriall";
 import { isJsonPrimitive } from "../utils/json.utils";
 import {
-  DATA_KEY,
-  SIGNATURE_KEY,
   NO_TRANSFORM_DATA,
   LIB,
   PROTOCOL_VERSION,
+  SIGNATURE_INDEX,
+  DATA_INDEX,
 } from "../const";
 
 export const deserialize = (
@@ -51,6 +51,7 @@ export const deserialize = (
       return node;
     }
 
+    // if node is serialized plain object
     if (!Array.isArray(node) && typeof node === "object") {
       const obj = {};
       revived.set(index, obj);
@@ -60,20 +61,28 @@ export const deserialize = (
       return obj;
     }
 
-    if (Array.isArray(node) && typeof node[0] !== "string") {
+    // if node is serialized plain array
+    if (Array.isArray(node) && typeof node[SIGNATURE_INDEX] !== "string") {
+      // cast necessary since typescript doesn't downcast properly type of node
+      const typedNode = node as Seriall.Serialized.NodeId[];
       const arr: Seriall.Serializable[] = [];
       revived.set(index, arr);
-      for (const element of node) {
+      for (const element of typedNode) {
         arr.push(reviveNode(element));
       }
       return arr;
     }
 
-    const transformerId = node[0];
+    // if node is a transformed node (uses a transformer)
+
+    // cast necessary since typescript doesn't downcast properly type of node
+    const typedNode = node as Seriall.Serialized.TransformedNode;
+
+    const transformerId = typedNode[SIGNATURE_INDEX];
     const transformer = transformers.get(transformerId);
 
     if (!transformerId) {
-      throw new Error(`No transformer found for node "${node}"`);
+      throw new Error(`No transformer found for node "${typedNode}"`);
     }
     if (transformer === undefined) {
       throw new Error(`No transformer found with id "${transformerId}"`);
@@ -85,7 +94,7 @@ export const deserialize = (
       any
     >;
 
-    const dataId = node[1];
+    const dataId = typedNode[DATA_INDEX];
 
     if (dataId === undefined) {
       const decoded = nonRecursiveTransformer.decode(NO_TRANSFORM_DATA);

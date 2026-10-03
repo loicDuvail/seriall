@@ -16,12 +16,13 @@ export namespace Seriall {
   };
 
   export namespace Serialized {
-    export type RevivableNode = { $: Transformer.Id; d?: number };
+    export type NodeId = number;
+    export type TransformedNode = [Transformer.Id, NodeId];
     export type Node =
       | JsonPrimitive
-      | number[]
-      | RevivableNode
-      | Record<string | number, any>;
+      | NodeId[]
+      | TransformedNode
+      | Record<string | number, NodeId>;
     export type Graph = Node[];
   }
 
