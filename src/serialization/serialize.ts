@@ -10,20 +10,21 @@ export const serialize = (
   const seen = new Map<any, number>();
 
   const addNodeToGraph = (node: Seriall.Serializable): number => {
-    if (isJsonPrimitive(node)) {
-      const id = graph.length;
-      graph.push(node);
-      return id;
-    }
-
     let id = seen.get(node);
 
-    if (id !== undefined) {
+    // ignore id if node is -0, because seen.get(-0) is same as seen.get(0), which thus loses its identity
+    if (id !== undefined && !Object.is(node, -0)) {
       return id;
     }
 
     id = graph.length;
     seen.set(node, id);
+
+    if (isJsonPrimitive(node)) {
+      const id = graph.length;
+      graph.push(node);
+      return id;
+    }
 
     const transformer = transformers.find((transformer) =>
       transformer.match(node),
