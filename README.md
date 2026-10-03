@@ -1,8 +1,8 @@
-# Seriall
+# seriall
 
 ## TL;DR
 
-**Seriall serializes JavaScript object graphs while preserving references, circular references, special primitive values, built-in types, and registered custom classes.**
+**seriall serializes JavaScript object graphs while preserving references, circular references, special primitive values, built-in types, and registered custom classes.**
 
 **The only JavaScript values not supported out-of-the-box are:**
 
@@ -16,7 +16,7 @@
 
   even though even this is theoretically configurable
 
-Seriall **does not use `eval` or dynamically execute serialized JavaScript code**. Serialized functions and classes are not supported by default, which helps keep deserialization data-only.
+seriall **does not use `eval` or dynamically execute serialized JavaScript code**. Serialized functions and classes are not supported by default, which helps keep deserialization data-only.
 
 It **conserves refenrential integrity**, so circularly referenced arrays/objects, and cross referenced arrays/objects can be serialized
 
@@ -188,7 +188,7 @@ and boxed primitives
 
 ### Symbols
 
-Seriall also preserves symbol identity, including symbols used as object keys. This means you can safely serialize and deserialize objects that use symbols for indexing:
+seriall also preserves symbol identity, including symbols used as object keys. This means you can safely serialize and deserialize objects that use symbols for indexing:
 
 ```ts
 import { Serializer } from "seriall";
@@ -234,19 +234,19 @@ console.log(restored.key === restoredKey);
 // true
 ```
 
-This works because Seriall preserves the object graph, rather than simply converting values to JSON.
+This works because seriall preserves the object graph, rather than simply converting values to JSON.
 
 ### Transformers
 
-Seriall's serialization logic is built around **transformers**.
+seriall's serialization logic is built around **transformers**.
 
-A transformer tells Seriall how to:
+A transformer tells seriall how to:
 
 - identify a specific type of value
 - encode it into serializable data
 - decode that data back into the original type
 
-This makes Seriall highly configurable and allows it to support types that are not supported out-of-the-box.
+This makes seriall highly configurable and allows it to support types that are not supported out-of-the-box.
 
 A transformer can be registered using `registerTransformer()`:
 
@@ -281,7 +281,7 @@ console.log(restored.website.href);
 
 ### Custom Class Serialization
 
-The `registerClass()` mechanism introduced earlier is actually built on top of Seriall's transformer system.
+The `registerClass()` mechanism introduced earlier is actually built on top of seriall's transformer system.
 
 In other words, **a registered class is ultimately just a transformer**.
 
@@ -315,7 +315,7 @@ class MyClass extends SerializableClass {
 
 ## Import Notes
 
-Seriall is exported in both cjs and mjs.
+seriall is exported in both cjs and mjs.
 
 It therefore supports both CommonJS import (`require`) and ES Module import (`import`)
 
@@ -375,7 +375,7 @@ go temporarily out of sync regarding their serialization protocol.
 
 ### Solution
 
-To handle this case and prevent incompatible data from being deserialized incorrectly, **Seriall checks the protocol version before deserializing data** .
+To handle this case and prevent incompatible data from being deserialized incorrectly, **seriall checks the protocol version before deserializing data** .
 
 ⚠️ A protocol mismatch will result in a error being thrown
 
