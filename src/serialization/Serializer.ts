@@ -14,18 +14,18 @@ type SerializerOptions = {
   enable: {
     builtinPrimitiveTransformers: boolean;
     builtinNativeClasses: boolean;
-    builtinClassTransformer: boolean;
     objectSymbolIndexing: boolean;
   };
+  classes: Record<Seriall.Transformer.Id, typeof SerializableClass>;
 };
 
 const defaultOptions: SerializerOptions = {
   enable: {
     builtinPrimitiveTransformers: true,
     builtinNativeClasses: true,
-    builtinClassTransformer: true,
     objectSymbolIndexing: false,
   },
+  classes: {},
 };
 
 export class Serializer {
@@ -44,6 +44,10 @@ export class Serializer {
       nativeClassesTransformers.forEach(this.registerTransformer);
     if (opt.enable.objectSymbolIndexing) {
       this.registerTransformer(objectSymbolIndexingTransformer);
+    }
+
+    for (const className in opt.classes) {
+      this.registerClass(className, opt.classes[className]);
     }
   }
 
