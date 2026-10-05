@@ -186,12 +186,15 @@ and boxed primitives
 
 ### Symbols
 
-seriall also preserves symbol identity, including symbols used as object keys. This means you can safely serialize and deserialize objects that use symbols for indexing:
+By default, seriall ignores symbol keys in objects, for performance reasons.
+You can however enable this feature in the Serializer's options
 
 ```ts
 import { Serializer } from "seriall";
 
-const serializer = new Serializer();
+const serializer = new Serializer({ enable: { objectSymbolIndexing: true } });
+//                                                                  ^^^^
+//                                                                  false by default
 
 const secretKey = Symbol("secret");
 

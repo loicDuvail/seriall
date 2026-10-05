@@ -50,35 +50,36 @@ export const primitivesTransformers: TransformerPack = [
     encode: (node) => node.toString(),
     decode: (node) => BigInt(node),
   }),
-  new Transformer<
-    object,
-    [PropertyKey, Seriall.Serializable][],
-    { recursive: true }
-  >({
-    id: "obj",
-    priority: Transformer.PRIORITY.PRIMITIVE,
-    recursive: true,
-    match: (node) => !Array.isArray(node) && typeof node === "object",
-    encode: (node) => {
-      const obj: [PropertyKey, Seriall.Serializable][] = [];
-      for (const key of Reflect.ownKeys(node)) {
-        const value = node[key];
-        if (typeof value !== "function") {
-          obj.push([key, node[key]]);
-        }
-      }
-      return obj;
-    },
-    decode: (registerNode) => {
-      const obj = {};
-      const encoded = registerNode(obj);
-      for (const [key, value] of encoded) {
-        obj[key] = value;
-      }
-      return obj;
-    },
-  }),
 ];
+
+export const objectSymbolIndexingTransformer = new Transformer<
+  object,
+  [PropertyKey, Seriall.Serializable][],
+  { recursive: true }
+>({
+  id: "obj",
+  priority: Transformer.PRIORITY.PRIMITIVE,
+  recursive: true,
+  match: (node) => !Array.isArray(node) && typeof node === "object",
+  encode: (node) => {
+    const obj: [PropertyKey, Seriall.Serializable][] = [];
+    for (const key of Reflect.ownKeys(node)) {
+      const value = node[key];
+      if (typeof value !== "function") {
+        obj.push([key, node[key]]);
+      }
+    }
+    return obj;
+  },
+  decode: (registerNode) => {
+    const obj = {};
+    const encoded = registerNode(obj);
+    for (const [key, value] of encoded) {
+      obj[key] = value;
+    }
+    return obj;
+  },
+});
 
 export const nativeClassesTransformers: TransformerPack = [
   new Transformer<Date, number>({

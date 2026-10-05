@@ -2,6 +2,7 @@ import { deserialize, serialize } from ".";
 import {
   createClassTransformer,
   nativeClassesTransformers,
+  objectSymbolIndexingTransformer,
   primitivesTransformers,
   type SerializableClass,
 } from "../transformer";
@@ -14,6 +15,7 @@ type SerializerOptions = {
     builtinPrimitiveTransformers: boolean;
     builtinNativeClasses: boolean;
     builtinClassTransformer: boolean;
+    objectSymbolIndexing: boolean;
   };
 };
 
@@ -22,6 +24,7 @@ const defaultOptions: SerializerOptions = {
     builtinPrimitiveTransformers: true,
     builtinNativeClasses: true,
     builtinClassTransformer: true,
+    objectSymbolIndexing: false,
   },
 };
 
@@ -37,6 +40,9 @@ export class Serializer {
       primitivesTransformers.forEach(this.registerTransformer);
     if (opt.enable.builtinNativeClasses)
       nativeClassesTransformers.forEach(this.registerTransformer);
+    if (opt.enable.objectSymbolIndexing) {
+      this.registerTransformer(objectSymbolIndexingTransformer);
+    }
   }
 
   serialize = (data: Seriall.Serializable) =>

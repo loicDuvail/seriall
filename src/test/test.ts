@@ -144,6 +144,26 @@ describe("serializer", () => {
       expect(typeof result.symbol).toBe("symbol");
       expect(result.symbol.description).toBe("test");
     });
+
+    it("serializes symbols as object key, with proper config", () => {
+      const symbolSerializer = new Serializer({
+        enable: { objectSymbolIndexing: false },
+      });
+      const value = {
+        [Symbol("test")]: true,
+      };
+
+      console.log(symbolSerializer.serialize(value));
+
+      const result = symbolSerializer.deserialize(
+        symbolSerializer.serialize(value),
+      ) as typeof value;
+
+      const [symbol] = Reflect.ownKeys(result) as [symbol];
+
+      expect(typeof symbol).toBe("symbol");
+      expect(symbol.description).toBe("test");
+    });
   });
 
   describe("arrays", () => {
