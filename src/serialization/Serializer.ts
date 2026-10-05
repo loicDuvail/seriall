@@ -30,8 +30,10 @@ const defaultOptions: SerializerOptions = {
 
 export class Serializer {
   private transformers: Seriall.Transformer[] = [];
-  private transformersMap: Map<Seriall.Transformer.Id, Seriall.Transformer> =
-    new Map();
+  private transformersRecord: Record<
+    Seriall.Transformer.Id,
+    Seriall.Transformer
+  > = {};
 
   constructor(options: DeepOptional<SerializerOptions> = {}) {
     const opt = deepMerge<SerializerOptions>(defaultOptions, options);
@@ -48,10 +50,10 @@ export class Serializer {
   serialize = (data: Seriall.Serializable) =>
     serialize(data, this.transformers);
 
-  deserialize = (data: string) => deserialize(data, this.transformersMap);
+  deserialize = (data: string) => deserialize(data, this.transformersRecord);
 
   registerTransformer = (transformer: Seriall.Transformer) => {
-    if (this.transformersMap.has(transformer.id)) {
+    if (transformer.id in this.transformersRecord) {
       throw new Error(
         `A transformer with id "${transformer.id}" is already registered, chose another one`,
       );
@@ -62,7 +64,7 @@ export class Serializer {
       (a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity),
     );
 
-    this.transformersMap.set(transformer.id, transformer);
+    this.transformersRecord[transformer.id] = transformer;
   };
 
   deregisterTransformer = (
@@ -70,7 +72,7 @@ export class Serializer {
   ) => {
     const id = typeof transformer === "object" ? transformer.id : transformer;
 
-    if (!this.transformersMap.has(id)) {
+    if (!(id in this.transformersRecord)) {
       throw new Error(
         `No transformer found for id "${id}", cannot deregister it`,
       );
@@ -80,7 +82,7 @@ export class Serializer {
       (transformer) => transformer.id !== id,
     );
 
-    this.transformersMap.delete(id);
+    delete this.transformersRecord[id];
   };
 
   registerClass = (name: string, clazz: typeof SerializableClass) => {

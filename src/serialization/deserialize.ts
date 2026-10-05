@@ -10,7 +10,7 @@ import {
 
 export const deserialize = (
   data: string,
-  transformers: Map<
+  transformers: Record<
     Seriall.Transformer.Id,
     Seriall.Transformer<boolean, any, any>
   >,
@@ -34,11 +34,11 @@ export const deserialize = (
   }
 
   const graph: Seriall.Serialized.Graph = d;
-  const revived: Map<number, Seriall.Serializable> = new Map();
+  const revived: Seriall.Serializable[] = [];
 
   const reviveNode = (index: number) => {
-    if (revived.has(index)) {
-      return revived.get(index);
+    if (index in revived) {
+      return revived[index];
     }
 
     if (graph.length <= index || index < 0) {
@@ -51,26 +51,26 @@ export const deserialize = (
       return node;
     }
 
+    // if node is serialized plain object
+    if (!Array.isArray(node) && typeof node === "object") {
+      const obj = {};
+      revived[index] = obj;
+      for (const key of Object.keys(node)) {
+        obj[key] = reviveNode(node[key]);
+      }
+      return obj;
+    }
+
     // if node is serialized plain array
-    if (Array.isArray(node) && typeof node[SIGNATURE_INDEX] !== "string") {
+    if (typeof node[SIGNATURE_INDEX] !== "string") {
       // cast necessary since typescript doesn't downcast properly type of node
       const typedNode = node as Seriall.Serialized.NodeId[];
       const arr: Seriall.Serializable[] = [];
-      revived.set(index, arr);
+      revived[index] = arr;
       for (const element of typedNode) {
         arr.push(reviveNode(element));
       }
       return arr;
-    }
-
-    // if node is serialized plain object
-    if (!Array.isArray(node) && typeof node === "object") {
-      const obj = {};
-      revived.set(index, obj);
-      for (const key in node) {
-        obj[key] = reviveNode(node[key]);
-      }
-      return obj;
     }
 
     // if node is a transformed node (uses a transformer)
@@ -79,9 +79,7 @@ export const deserialize = (
     const typedNode = node as Seriall.Serialized.TransformedNode;
 
     const transformerId = typedNode[SIGNATURE_INDEX];
-    // typedNode now only contains data ids
-    typedNode.shift();
-    const transformer = transformers.get(transformerId);
+    const transformer = transformers[transformerId];
 
     if (!transformerId) {
       throw new Error(`No transformer found for node "${typedNode}"`);
@@ -96,23 +94,31 @@ export const deserialize = (
       any
     >;
 
-    if (typedNode[0] === undefined && !transformer.recursive) {
+    if (!transformer.recursive && typedNode[DATA_INDEX] === undefined) {
       const decoded = nonRecursiveTransformer.decode(NO_TRANSFORM_DATA);
-      revived.set(index, decoded);
+      revived[index] = decoded;
       return decoded;
     }
 
     if (!transformer.recursive) {
-      const decoded = nonRecursiveTransformer.decode(typedNode.map(reviveNode));
-      revived.set(index, decoded);
+      const revivedValues = new Array(typedNode.length - 1);
+      for (let i = 1; i < typedNode.length; i++) {
+        revivedValues[i - 1] = reviveNode(typedNode[i] as number);
+      }
+      const decoded = nonRecursiveTransformer.decode(revivedValues);
+      revived[index] = decoded;
       return decoded;
     }
 
     const registerNode: Parameters<
       Seriall.Transformer.Decoder<any, any, true>
     >[0] = (node) => {
-      revived.set(index, node);
-      return typedNode.map(reviveNode);
+      revived[index] = node;
+      const revivedValues = new Array(typedNode.length - 1);
+      for (let i = 1; i < typedNode.length; i++) {
+        revivedValues[i - 1] = reviveNode(typedNode[i] as number);
+      }
+      return revivedValues;
     };
 
     return transformer.decode(registerNode);

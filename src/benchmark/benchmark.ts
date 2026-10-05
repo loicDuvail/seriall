@@ -10,17 +10,51 @@ import superjson from "superjson";
 
 import { SerializableClass, Serializer, Transformer } from "../index";
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // Configuration
-// -----------------------------------------------------------------------------
+// =============================================================================
 
-const ITERATIONS = 10_000;
-const WARMUP = 100;
+const ITERATIONS = 5_000;
+const WARMUP_ITERATIONS = 500;
+const ROUNDS = 7;
+
 const MAX_ERROR_LENGTH = 300;
 
-// -----------------------------------------------------------------------------
+// Set to true while developing/optimizing.
+// Set to false for cleaner benchmark output.
+const PRINT_SERIALIZED_DATA = false;
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type BenchmarkFn = () => void;
+
+type BenchmarkResult = {
+  name: string;
+  totalMs: number;
+  opsPerSecond: number;
+  error?: string;
+};
+
+type AggregateResult = {
+  name: string;
+  samples: number[];
+  median: number;
+  min: number;
+  max: number;
+  p95: number;
+  medianOpsPerSecond: number;
+};
+
+type BenchmarkCase = {
+  name: string;
+  fn: BenchmarkFn;
+};
+
+// =============================================================================
 // Seriall
-// -----------------------------------------------------------------------------
+// =============================================================================
 
 const seriall = new Serializer();
 
@@ -28,8 +62,9 @@ const { serialize: seriallSerialize, deserialize: seriallDeserialize } =
   seriall;
 
 class User extends SerializableClass {
-  address: Object;
+  address: object;
   root: User | undefined;
+
   constructor(
     public id: number,
     public name: string,
@@ -40,12 +75,13 @@ class User extends SerializableClass {
   }
 }
 
-// seriall.registerClass("usr", User);
 seriall.registerTransformer(
   new Transformer<User, any[], { recursive: true }>({
     id: "U",
     recursive: true,
+
     match: (node) => node instanceof User,
+
     encode: (user) => [
       user.id,
       user.name,
@@ -54,11 +90,17 @@ seriall.registerTransformer(
       user.address,
       user.root,
     ],
+
     decode: (registerNode) => {
+      // The object must be registered before children are hydrated so that
+      // circular references can point back to it.
       //@ts-ignore
       const node: User = {};
+
       Object.setPrototypeOf(node, User.prototype);
+
       const [id, name, createdAt, metadata, address, root] = registerNode(node);
+
       node.id = id;
       node.name = name;
       node.createdAt = createdAt;
@@ -71,17 +113,10 @@ seriall.registerTransformer(
   }),
 );
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // devalue custom type support
-// -----------------------------------------------------------------------------
+// =============================================================================
 
-/**
- * devalue supports arbitrary custom types through reducers/revivers.
- *
- * The reducer must return a serializable representation of the custom value.
- * That representation is recursively processed by devalue, so Date, Map,
- * Set, BigInt, circular references, etc. continue to work normally.
- */
 const devalueReducers = {
   User: (value: unknown) => {
     if (!(value instanceof User)) {
@@ -111,14 +146,17 @@ const devalueRevivers = {
     ];
 
     const user = new User(id, name, createdAt, metadata);
+
     user.address = address;
     user.root = root;
+
+    return user;
   },
 };
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // Fixtures
-// -----------------------------------------------------------------------------
+// =============================================================================
 
 function createCommonGraph() {
   const shared = {
@@ -140,10 +178,8 @@ function createCommonGraph() {
     secondaryAddress: shared,
   };
 
-  // Circular reference.
   graph.self = graph;
 
-  // Each user points back to the root.
   for (const user of users) {
     //@ts-ignore
     user.root = graph;
@@ -201,27 +237,22 @@ function createRichGraph() {
     ],
   };
 
-  // Circular root reference.
   graph.self = graph;
 
-  // Shared references.
   graph.primaryAddress = sharedAddress;
   graph.secondaryAddress = sharedAddress;
 
   for (const user of users) {
-    // Shared reference.
     user.address = sharedAddress;
-
-    // Circular reference through the User.
     user.root = graph;
   }
 
   return graph;
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // Error handling
-// -----------------------------------------------------------------------------
+// =============================================================================
 
 function formatError(error: unknown): string {
   let message: string;
@@ -229,7 +260,6 @@ function formatError(error: unknown): string {
   if (error instanceof Error) {
     message = error.message || error.name;
 
-    // devalue exposes the path to the offending value.
     const path = (error as Error & { path?: string }).path;
 
     if (path) {
@@ -243,7 +273,6 @@ function formatError(error: unknown): string {
     }
   }
 
-  // Collapse newlines/whitespace so an exception can never fill the terminal.
   message = message.replace(/\s+/g, " ").trim();
 
   if (message.length > MAX_ERROR_LENGTH) {
@@ -253,61 +282,70 @@ function formatError(error: unknown): string {
   return message;
 }
 
-function reportError(operation: string, error: unknown) {
-  console.error(`[ERROR] ${operation}: ${formatError(error)}`);
+// =============================================================================
+// Utility
+// =============================================================================
+
+function bytes(value: string | Uint8Array) {
+  return typeof value === "string"
+    ? Buffer.byteLength(value, "utf8")
+    : value.byteLength;
 }
 
-// -----------------------------------------------------------------------------
-// Safe one-time operations
-// -----------------------------------------------------------------------------
-
-type SafeResult<T> =
-  | {
-      ok: true;
-      value: T;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
-
-function safe<T>(operation: string, fn: () => T): SafeResult<T> {
-  try {
-    return {
-      ok: true,
-      value: fn(),
-    };
-  } catch (error) {
-    const message = formatError(error);
-
-    reportError(operation, error);
-
-    return {
-      ok: false,
-      error: message,
-    };
+function printSize(name: string, value: string | Uint8Array | undefined) {
+  if (value === undefined) {
+    console.log(`${name.padEnd(14)} unavailable`);
+    return;
   }
+
+  console.log(
+    `${name.padEnd(14)} ${bytes(value).toLocaleString().padStart(10)} bytes`,
+  );
 }
 
-// -----------------------------------------------------------------------------
-// Benchmark infrastructure
-// -----------------------------------------------------------------------------
+function median(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
 
-type BenchmarkResult = {
-  name: string;
-  totalMs: number;
-  opsPerSecond: number;
-  error?: string;
-};
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  }
 
-function benchmark(
+  return sorted[middle];
+}
+
+function percentile(values: number[], percentile: number) {
+  const sorted = [...values].sort((a, b) => a - b);
+
+  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+
+  return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
+}
+
+function shuffle<T>(array: T[]): T[] {
+  const result = [...array];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+// =============================================================================
+// Single benchmark
+// =============================================================================
+
+function runBenchmark(
   name: string,
-  fn: () => void,
+  fn: BenchmarkFn,
   iterations = ITERATIONS,
 ): BenchmarkResult {
   // Warmup.
   try {
-    for (let i = 0; i < WARMUP; i++) {
+    for (let i = 0; i < WARMUP_ITERATIONS; i++) {
       fn();
     }
   } catch (error) {
@@ -345,533 +383,577 @@ function benchmark(
   };
 }
 
-function format(result: BenchmarkResult) {
-  if (result.error) {
-    return [result.name.padEnd(30), "ERROR".padStart(10), result.error].join(
-      " | ",
-    );
+// =============================================================================
+// Multi-round benchmark
+// =============================================================================
+
+function runRounds(cases: BenchmarkCase[], rounds = ROUNDS): AggregateResult[] {
+  const samples = new Map<string, number[]>();
+
+  for (const benchmarkCase of cases) {
+    samples.set(benchmarkCase.name, []);
   }
 
-  return [
-    result.name.padEnd(30),
-    `${result.totalMs.toFixed(2).padStart(10)} ms`,
-    `${result.opsPerSecond.toFixed(0).padStart(12)} ops/s`,
-  ].join(" | ");
+  for (let round = 0; round < rounds; round++) {
+    console.log(
+      `  Round ${round + 1}/${rounds} — randomized benchmark order...`,
+    );
+
+    const order = shuffle(cases);
+
+    for (const benchmarkCase of order) {
+      const result = runBenchmark(benchmarkCase.name, benchmarkCase.fn);
+
+      if (result.error) {
+        console.error(`  [ERROR] ${benchmarkCase.name}: ${result.error}`);
+        continue;
+      }
+
+      samples.get(benchmarkCase.name)!.push(result.totalMs);
+    }
+  }
+
+  return cases.map((benchmarkCase) => {
+    const values = samples.get(benchmarkCase.name)!;
+
+    const med = median(values);
+
+    return {
+      name: benchmarkCase.name,
+      samples: values,
+      median: med,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      p95: percentile(values, 95),
+      medianOpsPerSecond: (ITERATIONS / med) * 1000,
+    };
+  });
 }
 
-function printResults(results: BenchmarkResult[]) {
+// =============================================================================
+// Reporting
+// =============================================================================
+
+function printAggregateResults(results: AggregateResult[]) {
+  console.log();
+
   console.log(
     "Benchmark".padEnd(30) +
       " | " +
-      "Time".padStart(13) +
+      "Median".padStart(12) +
       " | " +
-      "Throughput".padStart(13),
+      "Min".padStart(12) +
+      " | " +
+      "Max".padStart(12) +
+      " | " +
+      "p95".padStart(12) +
+      " | " +
+      "Ops/s".padStart(12),
   );
 
-  console.log("-".repeat(63));
+  console.log("-".repeat(100));
 
   for (const result of results) {
-    console.log(format(result));
+    console.log(
+      result.name.padEnd(30) +
+        " | " +
+        `${result.median.toFixed(2)} ms`.padStart(12) +
+        " | " +
+        `${result.min.toFixed(2)} ms`.padStart(12) +
+        " | " +
+        `${result.max.toFixed(2)} ms`.padStart(12) +
+        " | " +
+        `${result.p95.toFixed(2)} ms`.padStart(12) +
+        " | " +
+        `${result.medianOpsPerSecond.toFixed(0)}`.padStart(12),
+    );
   }
 }
 
-// -----------------------------------------------------------------------------
-// Size helpers
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Relative performance
+// =============================================================================
 
-function bytes(value: string | Uint8Array) {
-  return typeof value === "string"
-    ? Buffer.byteLength(value, "utf8")
-    : value.byteLength;
-}
+function printRelativePerformance(results: AggregateResult[]) {
+  const fastest = Math.min(...results.map((result) => result.median));
 
-function printSize(name: string, value: string | Uint8Array | undefined) {
-  if (value === undefined) {
-    console.log(`${name.padEnd(12)} unavailable`);
-    return;
+  console.log();
+  console.log("Relative performance");
+  console.log("--------------------");
+
+  for (const result of results) {
+    const relative = result.median / fastest;
+
+    console.log(`${result.name.padEnd(30)} ${relative.toFixed(2)}x`);
   }
-
-  console.log(
-    `${name.padEnd(12)} ${bytes(value).toLocaleString().padStart(8)} bytes`,
-  );
 }
 
-// -----------------------------------------------------------------------------
-// Common graph
-// -----------------------------------------------------------------------------
-
-console.log();
-console.log("Common graph benchmark");
-console.log("======================");
-console.log();
-
-console.log(`Iterations: ${ITERATIONS.toLocaleString()}`);
-console.log(`Warmup:     ${WARMUP.toLocaleString()}`);
-console.log();
-
-const commonGraph = createCommonGraph();
-
-// Pre-serialize once for deserialize benchmarks.
-
-const commonSeriallResult = safe("Seriall common graph serialization", () =>
-  seriallSerialize(commonGraph),
-);
-
-const commonFlattedResult = safe("flatted common graph serialization", () =>
-  flattedStringify(commonGraph),
-);
-
-const commonDevalueResult = safe("devalue common graph serialization", () =>
-  devalue.stringify(commonGraph),
-);
-
-const commonSuperjsonResult = safe("superjson common graph serialization", () =>
-  superjson.stringify(commonGraph),
-);
-
-const commonV8Result = safe("V8 common graph serialization", () =>
-  v8Serialize(commonGraph),
-);
-
-const commonSeriall = commonSeriallResult.ok
-  ? commonSeriallResult.value
-  : undefined;
-
-const commonFlatted = commonFlattedResult.ok
-  ? commonFlattedResult.value
-  : undefined;
-
-const commonDevalue = commonDevalueResult.ok
-  ? commonDevalueResult.value
-  : undefined;
-
-const commonSuperjson = commonSuperjsonResult.ok
-  ? commonSuperjsonResult.value
-  : undefined;
-
-const commonV8 = commonV8Result.ok ? commonV8Result.value : undefined;
-
-// -----------------------------------------------------------------------------
-// Common graph benchmark
-// -----------------------------------------------------------------------------
-
-const commonResults = [
-  benchmark("Seriall serialize", () => {
-    void seriallSerialize(commonGraph);
-  }),
-
-  benchmark("Seriall deserialize", () => {
-    if (commonSeriall === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void seriallDeserialize(commonSeriall);
-  }),
-
-  benchmark("Seriall round-trip", () => {
-    const encoded = seriallSerialize(commonGraph);
-    void seriallDeserialize(encoded);
-  }),
-
-  benchmark("flatted serialize", () => {
-    void flattedStringify(commonGraph);
-  }),
-
-  benchmark("flatted deserialize", () => {
-    if (commonFlatted === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void flattedParse(commonFlatted);
-  }),
-
-  benchmark("flatted round-trip", () => {
-    const encoded = flattedStringify(commonGraph);
-    void flattedParse(encoded);
-  }),
-
-  benchmark("devalue serialize", () => {
-    void devalue.stringify(commonGraph);
-  }),
-
-  benchmark("devalue deserialize", () => {
-    if (commonDevalue === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void devalue.parse(commonDevalue);
-  }),
-
-  benchmark("devalue round-trip", () => {
-    const encoded = devalue.stringify(commonGraph);
-    void devalue.parse(encoded);
-  }),
-
-  benchmark("superjson serialize", () => {
-    void superjson.stringify(commonGraph);
-  }),
-
-  benchmark("superjson deserialize", () => {
-    if (commonSuperjson === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void superjson.parse(commonSuperjson);
-  }),
-
-  benchmark("superjson round-trip", () => {
-    const encoded = superjson.stringify(commonGraph);
-    void superjson.parse(encoded);
-  }),
-
-  benchmark("V8 serialize", () => {
-    void v8Serialize(commonGraph);
-  }),
-
-  benchmark("V8 deserialize", () => {
-    if (commonV8 === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void v8Deserialize(commonV8);
-  }),
-
-  benchmark("V8 round-trip", () => {
-    const encoded = v8Serialize(commonGraph);
-    void v8Deserialize(encoded);
-  }),
-];
-
-printResults(commonResults);
-
-// -----------------------------------------------------------------------------
-// Common graph sizes
-// -----------------------------------------------------------------------------
-
-console.log();
-console.log("Common graph size");
-console.log("=================");
-console.log();
-
-printSize("Seriall:", commonSeriall);
-printSize("flatted:", commonFlatted);
-printSize("devalue:", commonDevalue);
-printSize("superjson:", commonSuperjson);
-printSize("V8:", commonV8);
-
-// -----------------------------------------------------------------------------
-// Rich graph
-// -----------------------------------------------------------------------------
-
-console.log();
-console.log("Rich JavaScript graph benchmark");
-console.log("================================");
-console.log();
-
-const richGraph = createRichGraph();
-
-// -----------------------------------------------------------------------------
-// Seriall
-// -----------------------------------------------------------------------------
-
-const richSeriallResult = safe("Seriall rich graph serialization", () =>
-  seriallSerialize(richGraph),
-);
-
-const richSeriall = richSeriallResult.ok ? richSeriallResult.value : undefined;
-
-console.log();
-console.log("Seriall rich graph");
-console.log("------------------");
-console.log();
-
-const richSeriallResults = [
-  benchmark("Seriall serialize", () => {
-    void seriallSerialize(richGraph);
-  }),
-
-  benchmark("Seriall deserialize", () => {
-    if (richSeriall === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void seriallDeserialize(richSeriall);
-  }),
-
-  benchmark("Seriall round-trip", () => {
-    const encoded = seriallSerialize(richGraph);
-    void seriallDeserialize(encoded);
-  }),
-];
-
-printResults(richSeriallResults);
-
-// -----------------------------------------------------------------------------
-// devalue
-// -----------------------------------------------------------------------------
-
-const richDevalueResult = safe("devalue rich graph serialization", () =>
-  devalue.stringify(richGraph, devalueReducers),
-);
-
-const richDevalue = richDevalueResult.ok ? richDevalueResult.value : undefined;
-
-console.log(richSeriall);
-console.log(richDevalue);
-
-console.log();
-console.log("devalue rich graph");
-console.log("------------------");
-console.log();
-
-const richDevalueResults = [
-  benchmark("devalue serialize", () => {
-    void devalue.stringify(richGraph, devalueReducers);
-  }),
-
-  benchmark("devalue deserialize", () => {
-    if (richDevalue === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void devalue.parse(richDevalue, devalueRevivers);
-  }),
-
-  benchmark("devalue round-trip", () => {
-    const encoded = devalue.stringify(richGraph, devalueReducers);
-
-    void devalue.parse(encoded, devalueRevivers);
-  }),
-];
-
-printResults(richDevalueResults);
-
-// -----------------------------------------------------------------------------
-// superjson
-// -----------------------------------------------------------------------------
-
-const richSuperjsonResult = safe("superjson rich graph serialization", () =>
-  superjson.stringify(richGraph),
-);
-
-const richSuperjson = richSuperjsonResult.ok
-  ? richSuperjsonResult.value
-  : undefined;
-
-console.log();
-console.log("superjson rich graph");
-console.log("--------------------");
-console.log();
-
-const richSuperjsonResults = [
-  benchmark("superjson serialize", () => {
-    void superjson.stringify(richGraph);
-  }),
-
-  benchmark("superjson deserialize", () => {
-    if (richSuperjson === undefined) {
-      throw new Error("initial serialization failed");
-    }
-
-    void superjson.parse(richSuperjson);
-  }),
-
-  benchmark("superjson round-trip", () => {
-    const encoded = superjson.stringify(richGraph);
-    void superjson.parse(encoded);
-  }),
-];
-
-printResults(richSuperjsonResults);
-
-// -----------------------------------------------------------------------------
-// Rich graph sizes
-// -----------------------------------------------------------------------------
-
-console.log();
-console.log("Rich graph size");
-console.log("===============");
-console.log();
-
-printSize("Seriall:", richSeriall);
-printSize("devalue:", richDevalue);
-printSize("superjson:", richSuperjson);
-
-// -----------------------------------------------------------------------------
-// Correctness helpers
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Correctness
+// =============================================================================
 
 function passFail(value: boolean) {
   return value ? "PASS" : "FAIL";
 }
 
-// -----------------------------------------------------------------------------
-// Correctness
-// -----------------------------------------------------------------------------
+function runCorrectnessChecks(name: string, deserialize: () => any) {
+  console.log();
+  console.log(`${name} correctness`);
+  console.log("--------------------");
 
-console.log();
-console.log("Correctness");
-console.log("===========");
-console.log();
+  try {
+    const restored = deserialize();
 
-// -----------------------------------------------------------------------------
-// Seriall correctness
-// -----------------------------------------------------------------------------
-
-if (richSeriall !== undefined) {
-  const result = safe(
-    "Seriall rich graph deserialization",
-    () => seriallDeserialize(richSeriall) as any,
-  );
-
-  if (result.ok) {
-    const restored = result.value;
-
-    console.log("Seriall circular:", passFail(restored.self === restored));
+    console.log("circular:".padEnd(24), passFail(restored.self === restored));
 
     console.log(
-      "Seriall shared reference:",
+      "shared reference:".padEnd(24),
       passFail(restored.primaryAddress === restored.secondaryAddress),
     );
 
-    console.log("Seriall Map:", passFail(restored.map instanceof Map));
+    console.log("Map:".padEnd(24), passFail(restored.map instanceof Map));
 
-    console.log("Seriall Set:", passFail(restored.set instanceof Set));
-
-    console.log("Seriall Date:", passFail(restored.dates[0] instanceof Date));
+    console.log("Set:".padEnd(24), passFail(restored.set instanceof Set));
 
     console.log(
-      "Seriall BigInt:",
+      "Date:".padEnd(24),
+      passFail(restored.dates[0] instanceof Date),
+    );
+
+    console.log(
+      "BigInt:".padEnd(24),
       passFail(typeof restored.primitives.bigint === "bigint"),
     );
 
-    console.log("Seriall User:", passFail(restored.users[0] instanceof User));
+    console.log(
+      "User:".padEnd(24),
+      passFail(restored.users[0] instanceof User),
+    );
 
     console.log(
-      "Seriall nested shared:",
+      "nested shared:".padEnd(24),
       passFail(restored.users[0].address === restored.address),
     );
 
     console.log(
-      "Seriall User root:",
-      passFail(restored.users[0].root === restored),
-    );
-  }
-} else {
-  console.log("Seriall correctness: SKIPPED");
-}
-
-// -----------------------------------------------------------------------------
-// devalue correctness
-// -----------------------------------------------------------------------------
-
-if (richDevalue !== undefined) {
-  const result = safe(
-    "devalue rich graph deserialization",
-    () => devalue.parse(richDevalue, devalueRevivers) as any,
-  );
-
-  if (result.ok) {
-    const restored = result.value;
-
-    console.log("devalue circular:", passFail(restored.self === restored));
-
-    console.log(
-      "devalue shared reference:",
-      passFail(restored.primaryAddress === restored.secondaryAddress),
-    );
-
-    console.log("devalue Map:", passFail(restored.map instanceof Map));
-
-    console.log("devalue Set:", passFail(restored.set instanceof Set));
-
-    console.log("devalue Date:", passFail(restored.dates[0] instanceof Date));
-
-    console.log(
-      "devalue BigInt:",
-      passFail(typeof restored.primitives.bigint === "bigint"),
-    );
-
-    console.log("devalue User:", passFail(restored.users[0] instanceof User));
-
-    console.log(
-      "devalue nested shared:",
-      passFail(restored.users[0].address === restored.address),
-    );
-
-    console.log(
-      "devalue User root:",
+      "User root:".padEnd(24),
       passFail(restored.users[0].root === restored),
     );
 
     console.log(
-      "devalue User metadata:",
+      "User metadata:".padEnd(24),
       passFail(restored.users[0].metadata instanceof Map),
     );
 
     console.log(
-      "devalue User metadata Set:",
+      "User metadata Set:".padEnd(24),
       passFail(restored.users[0].metadata.get("tags") instanceof Set),
     );
+  } catch (error) {
+    console.error(`[ERROR] ${name}: ${formatError(error)}`);
   }
-} else {
-  console.log("devalue correctness: SKIPPED");
 }
 
-// -----------------------------------------------------------------------------
-// superjson correctness
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Common graph
+// =============================================================================
 
-if (richSuperjson !== undefined) {
-  const result = safe(
-    "superjson rich graph deserialization",
-    () => superjson.parse(richSuperjson) as any,
+function benchmarkCommonGraph() {
+  console.log();
+  console.log("=".repeat(100));
+  console.log("COMMON GRAPH");
+  console.log("=".repeat(100));
+
+  const graph = createCommonGraph();
+
+  // ---------------------------------------------------------------------------
+  // Pre-serialize
+  // ---------------------------------------------------------------------------
+
+  const seriallEncoded = seriallSerialize(graph);
+  const flattedEncoded = flattedStringify(graph);
+  const devalueEncoded = devalue.stringify(graph);
+  const superjsonEncoded = superjson.stringify(graph);
+  const v8Encoded = v8Serialize(graph);
+
+  // ---------------------------------------------------------------------------
+  // Sizes
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Serialized sizes");
+  console.log("-----------------");
+
+  printSize("Seriall:", seriallEncoded);
+  printSize("flatted:", flattedEncoded);
+  printSize("devalue:", devalueEncoded);
+  printSize("superjson:", superjsonEncoded);
+  printSize("V8:", v8Encoded);
+
+  // ---------------------------------------------------------------------------
+  // Serialization
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Serialization");
+  console.log("-------------");
+
+  const serializationCases: BenchmarkCase[] = [
+    {
+      name: "Seriall serialize",
+      fn: () => {
+        void seriallSerialize(graph);
+      },
+    },
+
+    {
+      name: "flatted serialize",
+      fn: () => {
+        void flattedStringify(graph);
+      },
+    },
+
+    {
+      name: "devalue serialize",
+      fn: () => {
+        void devalue.stringify(graph);
+      },
+    },
+
+    {
+      name: "superjson serialize",
+      fn: () => {
+        void superjson.stringify(graph);
+      },
+    },
+
+    {
+      name: "V8 serialize",
+      fn: () => {
+        void v8Serialize(graph);
+      },
+    },
+  ];
+
+  const serializationResults = runRounds(serializationCases);
+
+  printAggregateResults(serializationResults);
+  printRelativePerformance(serializationResults);
+
+  // ---------------------------------------------------------------------------
+  // Deserialization
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Deserialization");
+  console.log("----------------");
+
+  const deserializationCases: BenchmarkCase[] = [
+    {
+      name: "Seriall deserialize",
+      fn: () => {
+        void seriallDeserialize(seriallEncoded);
+      },
+    },
+
+    {
+      name: "flatted deserialize",
+      fn: () => {
+        void flattedParse(flattedEncoded);
+      },
+    },
+
+    {
+      name: "devalue deserialize",
+      fn: () => {
+        void devalue.parse(devalueEncoded);
+      },
+    },
+
+    {
+      name: "superjson deserialize",
+      fn: () => {
+        void superjson.parse(superjsonEncoded);
+      },
+    },
+
+    {
+      name: "V8 deserialize",
+      fn: () => {
+        void v8Deserialize(v8Encoded);
+      },
+    },
+  ];
+
+  const deserializationResults = runRounds(deserializationCases);
+
+  printAggregateResults(deserializationResults);
+  printRelativePerformance(deserializationResults);
+
+  // ---------------------------------------------------------------------------
+  // Round-trip
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Round-trip");
+  console.log("----------");
+
+  const roundTripCases: BenchmarkCase[] = [
+    {
+      name: "Seriall round-trip",
+      fn: () => {
+        const encoded = seriallSerialize(graph);
+        void seriallDeserialize(encoded);
+      },
+    },
+
+    {
+      name: "flatted round-trip",
+      fn: () => {
+        const encoded = flattedStringify(graph);
+        void flattedParse(encoded);
+      },
+    },
+
+    {
+      name: "devalue round-trip",
+      fn: () => {
+        const encoded = devalue.stringify(graph);
+        void devalue.parse(encoded);
+      },
+    },
+
+    {
+      name: "superjson round-trip",
+      fn: () => {
+        const encoded = superjson.stringify(graph);
+        void superjson.parse(encoded);
+      },
+    },
+
+    {
+      name: "V8 round-trip",
+      fn: () => {
+        const encoded = v8Serialize(graph);
+        void v8Deserialize(encoded);
+      },
+    },
+  ];
+
+  const roundTripResults = runRounds(roundTripCases);
+
+  printAggregateResults(roundTripResults);
+  printRelativePerformance(roundTripResults);
+}
+
+// =============================================================================
+// Rich graph
+// =============================================================================
+
+function benchmarkRichGraph() {
+  console.log();
+  console.log("=".repeat(100));
+  console.log("RICH JAVASCRIPT GRAPH");
+  console.log("=".repeat(100));
+
+  const graph = createRichGraph();
+
+  const seriallEncoded = seriallSerialize(graph);
+  const devalueEncoded = devalue.stringify(graph, devalueReducers);
+
+  let superjsonEncoded: string | undefined;
+
+  try {
+    superjsonEncoded = superjson.stringify(graph);
+  } catch (error) {
+    console.log();
+    console.log(
+      `superjson does not support this circular rich graph: ${formatError(error)}`,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sizes
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Serialized sizes");
+  console.log("-----------------");
+
+  printSize("Seriall:", seriallEncoded);
+  printSize("devalue:", devalueEncoded);
+  printSize("superjson:", superjsonEncoded);
+
+  // ---------------------------------------------------------------------------
+  // Serialization
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Serialization");
+  console.log("-------------");
+
+  const serializationCases: BenchmarkCase[] = [
+    {
+      name: "Seriall serialize",
+      fn: () => {
+        void seriallSerialize(graph);
+      },
+    },
+
+    {
+      name: "devalue serialize",
+      fn: () => {
+        void devalue.stringify(graph, devalueReducers);
+      },
+    },
+  ];
+
+  if (superjsonEncoded !== undefined) {
+    serializationCases.push({
+      name: "superjson serialize",
+      fn: () => {
+        void superjson.stringify(graph);
+      },
+    });
+  }
+
+  const serializationResults = runRounds(serializationCases);
+
+  printAggregateResults(serializationResults);
+  printRelativePerformance(serializationResults);
+
+  // ---------------------------------------------------------------------------
+  // Deserialization
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Deserialization");
+  console.log("----------------");
+
+  const deserializationCases: BenchmarkCase[] = [
+    {
+      name: "Seriall deserialize",
+      fn: () => {
+        void seriallDeserialize(seriallEncoded);
+      },
+    },
+
+    {
+      name: "devalue deserialize",
+      fn: () => {
+        void devalue.parse(devalueEncoded, devalueRevivers);
+      },
+    },
+  ];
+
+  if (superjsonEncoded !== undefined) {
+    deserializationCases.push({
+      name: "superjson deserialize",
+      fn: () => {
+        void superjson.parse(superjsonEncoded);
+      },
+    });
+  }
+
+  const deserializationResults = runRounds(deserializationCases);
+
+  printAggregateResults(deserializationResults);
+  printRelativePerformance(deserializationResults);
+
+  // ---------------------------------------------------------------------------
+  // Round-trip
+  // ---------------------------------------------------------------------------
+
+  console.log();
+  console.log("Round-trip");
+  console.log("----------");
+
+  const roundTripCases: BenchmarkCase[] = [
+    {
+      name: "Seriall round-trip",
+      fn: () => {
+        const encoded = seriallSerialize(graph);
+        void seriallDeserialize(encoded);
+      },
+    },
+
+    {
+      name: "devalue round-trip",
+      fn: () => {
+        const encoded = devalue.stringify(graph, devalueReducers);
+        void devalue.parse(encoded, devalueRevivers);
+      },
+    },
+  ];
+
+  if (superjsonEncoded !== undefined) {
+    roundTripCases.push({
+      name: "superjson round-trip",
+      fn: () => {
+        const encoded = superjson.stringify(graph);
+        void superjson.parse(encoded);
+      },
+    });
+  }
+
+  const roundTripResults = runRounds(roundTripCases);
+
+  printAggregateResults(roundTripResults);
+  printRelativePerformance(roundTripResults);
+
+  // ---------------------------------------------------------------------------
+  // Correctness
+  // ---------------------------------------------------------------------------
+
+  runCorrectnessChecks("Seriall", () => seriallDeserialize(seriallEncoded));
+
+  runCorrectnessChecks("devalue", () =>
+    devalue.parse(devalueEncoded, devalueRevivers),
   );
 
-  if (result.ok) {
-    const restored = result.value;
-
-    console.log("superjson circular:", passFail(restored.self === restored));
-
-    console.log(
-      "superjson shared reference:",
-      passFail(restored.primaryAddress === restored.secondaryAddress),
-    );
-
-    console.log("superjson Map:", passFail(restored.map instanceof Map));
-
-    console.log("superjson Set:", passFail(restored.set instanceof Set));
-
-    console.log("superjson Date:", passFail(restored.dates[0] instanceof Date));
-
-    console.log(
-      "superjson BigInt:",
-      passFail(typeof restored.primitives.bigint === "bigint"),
-    );
+  if (superjsonEncoded !== undefined) {
+    runCorrectnessChecks("superjson", () => superjson.parse(superjsonEncoded));
   }
-} else {
-  console.log("superjson correctness: SKIPPED");
 }
 
-// -----------------------------------------------------------------------------
-// Notes
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Optional serialized-data output
+// =============================================================================
+
+function printSerializedData(name: string, value: string | Uint8Array) {
+  if (!PRINT_SERIALIZED_DATA) {
+    return;
+  }
+
+  console.log();
+  console.log(name);
+  console.log("-".repeat(name.length));
+
+  if (typeof value === "string") {
+    console.log(value);
+  } else {
+    console.log(Buffer.from(value).toString("hex"));
+  }
+}
+
+// =============================================================================
+// Main
+// =============================================================================
 
 console.log();
-console.log("Notes");
-console.log("=====");
+console.log("SERIALIZATION BENCHMARK");
+console.log("=======================");
 console.log();
 
-console.log("flatted is benchmarked against the common JSON-like graph.");
+console.log(`Iterations: ${ITERATIONS.toLocaleString()}`);
+console.log(`Warmup:     ${WARMUP_ITERATIONS.toLocaleString()}`);
+console.log(`Rounds:     ${ROUNDS.toLocaleString()}`);
+console.log("Order:      randomized every round");
+console.log("Statistic:  median / min / max / p95");
+console.log();
 
-console.log("Rich-type comparisons use Seriall, devalue, and superjson.");
+benchmarkCommonGraph();
+benchmarkRichGraph();
 
-console.log(
-  "devalue uses a custom User reducer/reviver for class preservation.",
-);
-
-console.log("V8 is binary and is included as a compact binary baseline.");
-
-console.log("Custom class preservation is tested for Seriall and devalue.");
-
-console.log("Failed operations are reported as ERROR rather than 0 ops/s.");
+console.log();
+console.log("Benchmark complete.");
