@@ -74,6 +74,8 @@ myData.self = myData;
 // ------- serialize data -------
 
 const str = serialize(myData);
+//    ^^^
+// {"lib":"seriall","v":1,"d":[{"nestedObjects":1,"name":4,"self":0},[2,2],{"name":3},"Gömböc","It works!"]}
 
 // -------  -------  -------
 // `str` can now go through a network for instance, and be deserialized at the other end like so:
@@ -144,6 +146,8 @@ mary.friends.push(john);
 john.friends.push(mary);
 
 const str = serializer.serialize(mary);
+//    ^^^
+// {"lib":"seriall","v":1,"d":[["$usr",1,2,6],"Mary",[3],["$usr",4,5,6],"John",[0],["$adr",7,8],"France","Paris"]}
 
 // -------  -------  -------
 // `str` can now go through a network for instance, and be deserialized at the other end like so:
