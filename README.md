@@ -316,6 +316,10 @@ class MyClass extends SerializableClass {
     console.log("Calling a custom encoding function");
     return super[SYMBOLS.ENCODE]();
   }
+  static [SYMBOLS.DECODE] = function (this, registerNode) {
+    console.log("Calling a custom decoding function");
+    return super[SYMBOLS.DECODE](registerNode);
+  };
 }
 ```
 
