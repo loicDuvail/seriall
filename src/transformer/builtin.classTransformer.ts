@@ -11,7 +11,7 @@ export abstract class SerializableClass {
 
   [ENCODE]() {
     const encoded: any = [];
-    for (const key of Reflect.ownKeys(this)) {
+    for (const key of Object.keys(this)) {
       const value = this[key];
       if (typeof value !== "function") {
         encoded.push(this[key]);
