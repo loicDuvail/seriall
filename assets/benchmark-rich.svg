@@ -1,0 +1,394 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+
+    <rect width="1200" height="700" fill="white"/>
+  
+
+    <text
+      x="600"
+      y="45"
+      text-anchor="middle"
+      font-family="Inter, Arial, sans-serif"
+      font-size="28"
+      font-weight="700"
+      fill="#111827"
+    >
+      Rich JavaScript Graph
+    </text>
+  
+
+    <text
+      x="600"
+      y="72"
+      text-anchor="middle"
+      font-family="Inter, Arial, sans-serif"
+      font-size="15"
+      fill="#6b7280"
+    >
+      Operations per second · higher is better
+    </text>
+  
+
+      <line
+        x1="100"
+        y1="570"
+        x2="1150"
+        y2="570"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="575"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        0
+      </text>
+    
+
+      <line
+        x1="100"
+        y1="476"
+        x2="1150"
+        y2="476"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="481"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        1,000
+      </text>
+    
+
+      <line
+        x1="100"
+        y1="382"
+        x2="1150"
+        y2="382"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="387"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        2,000
+      </text>
+    
+
+      <line
+        x1="100"
+        y1="288"
+        x2="1150"
+        y2="288"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="293"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        3,000
+      </text>
+    
+
+      <line
+        x1="100"
+        y1="194"
+        x2="1150"
+        y2="194"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="199"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        4,000
+      </text>
+    
+
+      <line
+        x1="100"
+        y1="100"
+        x2="1150"
+        y2="100"
+        stroke="#e5e7eb"
+        stroke-width="1"
+      />
+    
+
+      <text
+        x="85"
+        y="105"
+        text-anchor="end"
+        font-family="Inter, Arial, sans-serif"
+        font-size="13"
+        fill="#6b7280"
+      >
+        5,000
+      </text>
+    
+
+    <text
+      x="25"
+      y="335"
+      text-anchor="middle"
+      transform="rotate(-90 25 335)"
+      font-family="Inter, Arial, sans-serif"
+      font-size="14"
+      fill="#4b5563"
+    >
+      Operations / second
+    </text>
+  
+
+          <rect
+            x="209"
+            y="326.634"
+            width="62"
+            height="243.36599999999999"
+            rx="5"
+            fill="#6366f1"
+          />
+        
+
+          <text
+            x="240"
+            y="318.634"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            2,589
+          </text>
+        
+
+          <rect
+            x="279"
+            y="334.812"
+            width="62"
+            height="235.188"
+            rx="5"
+            fill="#f59e0b"
+          />
+        
+
+          <text
+            x="310"
+            y="326.812"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            2,502
+          </text>
+        
+
+        <text
+          x="275"
+          y="605"
+          text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="16"
+          font-weight="600"
+          fill="#374151"
+        >
+          Serialization
+        </text>
+      
+
+          <rect
+            x="559"
+            y="179.24199999999996"
+            width="62"
+            height="390.75800000000004"
+            rx="5"
+            fill="#f59e0b"
+          />
+        
+
+          <text
+            x="590"
+            y="171.24199999999996"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            4,157
+          </text>
+        
+
+          <rect
+            x="629"
+            y="240.53000000000003"
+            width="62"
+            height="329.46999999999997"
+            rx="5"
+            fill="#6366f1"
+          />
+        
+
+          <text
+            x="660"
+            y="232.53000000000003"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            3,505
+          </text>
+        
+
+        <text
+          x="625"
+          y="605"
+          text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="16"
+          font-weight="600"
+          fill="#374151"
+        >
+          Deserialization
+        </text>
+      
+
+          <rect
+            x="909"
+            y="427.214"
+            width="62"
+            height="142.786"
+            rx="5"
+            fill="#f59e0b"
+          />
+        
+
+          <text
+            x="940"
+            y="419.214"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            1,519
+          </text>
+        
+
+          <rect
+            x="979"
+            y="432.102"
+            width="62"
+            height="137.89800000000002"
+            rx="5"
+            fill="#6366f1"
+          />
+        
+
+          <text
+            x="1010"
+            y="424.102"
+            text-anchor="middle"
+            font-family="Inter, Arial, sans-serif"
+            font-size="12"
+            font-weight="600"
+            fill="#374151"
+          >
+            1,467
+          </text>
+        
+
+        <text
+          x="975"
+          y="605"
+          text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="16"
+          font-weight="600"
+          fill="#374151"
+        >
+          Round-trip
+        </text>
+      
+
+      <rect
+        x="100"
+        y="644"
+        width="14"
+        height="14"
+        rx="3"
+        fill="#6366f1"
+      />
+    
+
+      <text
+        x="122"
+        y="656"
+        font-family="Inter, Arial, sans-serif"
+        font-size="14"
+        fill="#374151"
+      >
+        Seriall
+      </text>
+    
+
+      <rect
+        x="208"
+        y="644"
+        width="14"
+        height="14"
+        rx="3"
+        fill="#f59e0b"
+      />
+    
+
+      <text
+        x="230"
+        y="656"
+        font-family="Inter, Arial, sans-serif"
+        font-size="14"
+        fill="#374151"
+      >
+        devalue
+      </text>
+    
+</svg>

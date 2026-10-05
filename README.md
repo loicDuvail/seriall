@@ -36,6 +36,7 @@ It is **highly configurable**, through the usage of `transformers`
   - [Symbols](#symbols)
   - [Transformers](#transformers)
   - [Custom Class Serialization](#custom-class-serialization)
+- [Benchmark](#benchmark)
 - [Import Notes](#import-notes)
   - [JavaScript](#javascript)
   - [Typescript](#typescript)
@@ -313,6 +314,71 @@ class MyClass extends SerializableClass {
   }
 }
 ```
+
+## Benchmark
+
+seriall is designed for **general-purpose JavaScript object graphs**, including circular references, shared references, built-in types, and recursive custom class instances.
+
+Benchmarks were run with **5,000 iterations**, **500 warmup iterations**, and **7 rounds** with randomized benchmark order. Results below use the median of the rounds.
+
+### Common JavaScript graph
+
+This benchmark contains circular references and many shared object references.
+
+| Operation       |          seriall |     V8 | devalue | flatted | superjson |
+| --------------- | ---------------: | -----: | ------: | ------: | --------: |
+| Serialization   | **16,887 ops/s** | 34,903 |   9,674 |   7,086 |     2,727 |
+| Deserialization | **16,077 ops/s** | 18,274 |  16,459 |   3,298 |     6,200 |
+| Round-trip      |  **8,279 ops/s** | 11,727 |   5,974 |   2,218 |     1,875 |
+
+seriall 's serialized size was **6,057 bytes**, compared with 6,029 bytes for devalue, 6,445 bytes for flatted, 15,233 bytes for superjson, and 4,458 bytes for V8.
+
+For this graph, seriall 's complete round-trip was approximately **1.4× faster than devalue** and **3.7× faster than flatted**.
+
+### Rich JavaScript graph
+
+The rich graph includes:
+
+- `Date`, `Map`, `Set`, and `BigInt`
+- shared references
+- circular references
+- recursive custom `User` instances
+- users referencing themselves and each other
+- custom classes nested at multiple levels
+
+| Operation       |         seriall | devalue |
+| --------------- | --------------: | ------: |
+| Serialization   | **2,589 ops/s** |   2,502 |
+| Deserialization | **3,505 ops/s** |   4,157 |
+| Round-trip      | **1,467 ops/s** |   1,519 |
+
+seriall serialized this graph to **16,517 bytes**.
+
+The most important difference in this benchmark is correctness: seriall preserves recursive custom-class identity, including self-references and cross-references between class instances.
+
+```text
+seriall:
+  Self referencing user: PASS
+  Cross referencing users: PASS
+
+devalue:
+  Self referencing user: FAIL
+  Cross referencing users: FAIL
+```
+
+### Plots
+
+![Common JavaScript Graph](./assets/benchmark-common.svg)
+
+![Rich JavaScript Graph](./assets/benchmark-rich.svg)
+
+### Conclusion
+
+Among the tested libraries, Seriall was the fastest non-binary serializer overall, while remaining close to devalue in performance on the richer benchmark.
+
+More importantly, Seriall combines this performance with full referential integrity for recursive custom class instances, configurable transformers, built-in type support, and a data-only serialization format.
+
+That makes Seriall particularly well suited for transferring complex JavaScript object graphs, such as those encountered in network-layer protocols.
 
 ## Import Notes
 
