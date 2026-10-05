@@ -10,11 +10,11 @@ export abstract class SerializableClass {
   constructor(..._: any) {}
 
   [ENCODE]() {
-    const encoded = {};
+    const encoded: any = [];
     for (const key of Reflect.ownKeys(this)) {
       const value = this[key];
       if (typeof value !== "function") {
-        encoded[key] = this[key];
+        encoded.push(this[key]);
       }
     }
     return encoded;
@@ -26,7 +26,9 @@ export abstract class SerializableClass {
   ) {
     let revivedInstance = {} as InstanceType<T>;
     const args = registerNode(revivedInstance);
-    Object.assign(revivedInstance, args);
+    //@ts-expect-error
+    const keys = Reflect.ownKeys(new this({}));
+    keys.forEach((key, index) => (revivedInstance[key] = args[index]));
     Object.setPrototypeOf(revivedInstance, this.prototype);
     return revivedInstance;
   };
@@ -36,7 +38,7 @@ export const createClassTransformer = <T extends typeof SerializableClass>(
   id: string,
   clazz: T,
 ) =>
-  new Transformer<InstanceType<T>, object, { recursive: true }>({
+  new Transformer<InstanceType<T>, any[], { recursive: true }>({
     id,
     priority: Transformer.PRIORITY.CUSTOM_CLASS,
     recursive: true,

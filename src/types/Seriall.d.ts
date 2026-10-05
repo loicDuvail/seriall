@@ -34,8 +34,8 @@ export namespace Seriall {
     type NoData = undefined;
 
     type Encoded<Recursive extends boolean> = Recursive extends false
-      ? JsonPrimitive | object | Encoded<false>[] | NoData
-      : (JsonPrimitive | Encoded<true>)[] | object;
+      ? (JsonPrimitive | object | Encoded<false>)[] | NoData
+      : (JsonPrimitive | object | Encoded<true>)[];
 
     type Id = string | number;
 

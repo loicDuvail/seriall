@@ -51,16 +51,6 @@ export const deserialize = (
       return node;
     }
 
-    // if node is serialized plain object
-    if (!Array.isArray(node) && typeof node === "object") {
-      const obj = {};
-      revived.set(index, obj);
-      for (const key in node) {
-        obj[key] = reviveNode(node[key]);
-      }
-      return obj;
-    }
-
     // if node is serialized plain array
     if (Array.isArray(node) && typeof node[SIGNATURE_INDEX] !== "string") {
       // cast necessary since typescript doesn't downcast properly type of node
@@ -73,12 +63,24 @@ export const deserialize = (
       return arr;
     }
 
+    // if node is serialized plain object
+    if (!Array.isArray(node) && typeof node === "object") {
+      const obj = {};
+      revived.set(index, obj);
+      for (const key in node) {
+        obj[key] = reviveNode(node[key]);
+      }
+      return obj;
+    }
+
     // if node is a transformed node (uses a transformer)
 
     // cast necessary since typescript doesn't downcast properly type of node
     const typedNode = node as Seriall.Serialized.TransformedNode;
 
     const transformerId = typedNode[SIGNATURE_INDEX];
+    // typedNode now only contains data ids
+    typedNode.shift();
     const transformer = transformers.get(transformerId);
 
     if (!transformerId) {
@@ -94,16 +96,14 @@ export const deserialize = (
       any
     >;
 
-    const dataId = typedNode[DATA_INDEX];
-
-    if (dataId === undefined) {
+    if (typedNode[0] === undefined && !transformer.recursive) {
       const decoded = nonRecursiveTransformer.decode(NO_TRANSFORM_DATA);
       revived.set(index, decoded);
       return decoded;
     }
 
     if (!transformer.recursive) {
-      const decoded = nonRecursiveTransformer.decode(reviveNode(dataId));
+      const decoded = nonRecursiveTransformer.decode(typedNode.map(reviveNode));
       revived.set(index, decoded);
       return decoded;
     }
@@ -112,7 +112,7 @@ export const deserialize = (
       Seriall.Transformer.Decoder<any, any, true>
     >[0] = (node) => {
       revived.set(index, node);
-      return reviveNode(dataId);
+      return typedNode.map(reviveNode);
     };
 
     return transformer.decode(registerNode);

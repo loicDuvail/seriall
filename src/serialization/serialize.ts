@@ -42,8 +42,10 @@ export const serialize = (
       revivable[SIGNATURE_INDEX] = transformer.id;
       const encoded = transformer.encode(node);
       if (encoded !== NO_TRANSFORM_DATA) {
-        const dataId = addNodeToGraph(encoded);
-        revivable[DATA_INDEX] = dataId;
+        encoded.forEach((el, index) => {
+          const dataId = addNodeToGraph(el);
+          revivable[DATA_INDEX + index] = dataId;
+        });
       }
       return id;
     }

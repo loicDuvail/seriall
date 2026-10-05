@@ -8,7 +8,7 @@ import { stringify as flattedStringify, parse as flattedParse } from "flatted";
 import * as devalue from "devalue";
 import superjson from "superjson";
 
-import { SerializableClass, Serializer } from "../index";
+import { SerializableClass, Serializer, Transformer } from "../index";
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -28,6 +28,8 @@ const { serialize: seriallSerialize, deserialize: seriallDeserialize } =
   seriall;
 
 class User extends SerializableClass {
+  address: Object;
+  root: User | undefined;
   constructor(
     public id: number,
     public name: string,
@@ -38,7 +40,36 @@ class User extends SerializableClass {
   }
 }
 
-seriall.registerClass("usr", User);
+// seriall.registerClass("usr", User);
+seriall.registerTransformer(
+  new Transformer<User, any[], { recursive: true }>({
+    id: "U",
+    recursive: true,
+    match: (node) => node instanceof User,
+    encode: (user) => [
+      user.id,
+      user.name,
+      user.createdAt,
+      user.metadata,
+      user.address,
+      user.root,
+    ],
+    decode: (registerNode) => {
+      //@ts-ignore
+      const node: User = {};
+      Object.setPrototypeOf(node, User.prototype);
+      const [id, name, createdAt, metadata, address, root] = registerNode(node);
+      node.id = id;
+      node.name = name;
+      node.createdAt = createdAt;
+      node.metadata = metadata;
+      node.address = address;
+      node.root = root;
+
+      return node;
+    },
+  }),
+);
 
 // -----------------------------------------------------------------------------
 // devalue custom type support
@@ -57,20 +88,31 @@ const devalueReducers = {
       return false;
     }
 
-    return [value.id, value.name, value.createdAt, value.metadata];
+    return [
+      value.id,
+      value.name,
+      value.createdAt,
+      value.metadata,
+      value.address,
+      value.root,
+    ];
   },
 };
 
 const devalueRevivers = {
   User: (value: unknown) => {
-    const [id, name, createdAt, metadata] = value as [
+    const [id, name, createdAt, metadata, address, root] = value as [
       number,
       string,
       Date,
       Map<string, unknown>,
+      object,
+      User,
     ];
 
-    return new User(id, name, createdAt, metadata);
+    const user = new User(id, name, createdAt, metadata);
+    user.address = address;
+    user.root = root;
   },
 };
 
@@ -168,10 +210,10 @@ function createRichGraph() {
 
   for (const user of users) {
     // Shared reference.
-    (user as any).address = sharedAddress;
+    user.address = sharedAddress;
 
     // Circular reference through the User.
-    (user as any).root = graph;
+    user.root = graph;
   }
 
   return graph;
