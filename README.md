@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-**seriall serializes JavaScript object graphs while preserving references, circular references, special primitive values, built-in types, and registered custom classes.**
+**seriall is a data-only serialization protocol for JavaScript object graphs, preserving reference identity, circular structures, built-in types, and registered custom classes.**
 
 **The only JavaScript values not supported out-of-the-box are:**
 
