@@ -64,6 +64,8 @@ const { serialize: seriallSerialize, deserialize: seriallDeserialize } =
 class User extends SerializableClass {
   address: object;
   root: User | undefined;
+  self: User | undefined;
+  friends: User[] = [];
 
   constructor(
     public id: number,
@@ -74,6 +76,8 @@ class User extends SerializableClass {
     super();
   }
 }
+
+// seriall.registerClass("U", User);
 
 seriall.registerTransformer(
   new Transformer<User, any[], { recursive: true }>({
@@ -89,17 +93,20 @@ seriall.registerTransformer(
       user.metadata,
       user.address,
       user.root,
+      user.self,
+      user.friends,
     ],
 
     decode: (registerNode) => {
       // The object must be registered before children are hydrated so that
       // circular references can point back to it.
-      //@ts-ignore
+      // @ts-ignore
       const node: User = {};
 
       Object.setPrototypeOf(node, User.prototype);
 
-      const [id, name, createdAt, metadata, address, root] = registerNode(node);
+      const [id, name, createdAt, metadata, address, root, self, friends] =
+        registerNode(node);
 
       node.id = id;
       node.name = name;
@@ -107,6 +114,8 @@ seriall.registerTransformer(
       node.metadata = metadata;
       node.address = address;
       node.root = root;
+      node.self = self;
+      node.friends = friends;
 
       return node;
     },
@@ -130,25 +139,32 @@ const devalueReducers = {
       value.metadata,
       value.address,
       value.root,
+      value.self,
+      value.friends,
     ];
   },
 };
 
 const devalueRevivers = {
   User: (value: unknown) => {
-    const [id, name, createdAt, metadata, address, root] = value as [
-      number,
-      string,
-      Date,
-      Map<string, unknown>,
-      object,
-      User,
-    ];
+    const [id, name, createdAt, metadata, address, root, self, friends] =
+      value as [
+        number,
+        string,
+        Date,
+        Map<string, unknown>,
+        object,
+        User,
+        User,
+        User[],
+      ];
 
     const user = new User(id, name, createdAt, metadata);
 
     user.address = address;
     user.root = root;
+    user.self = self;
+    user.friends = friends;
 
     return user;
   },
@@ -207,6 +223,35 @@ function createRichGraph() {
       ]),
     );
   });
+
+  const selfUser = new User(
+    101,
+    `User ${101}`,
+    new Date(),
+    new Map<string, unknown>(),
+  );
+  selfUser.self = selfUser;
+
+  users.push(selfUser);
+
+  const crossReferencingUser1 = new User(
+    102,
+    `User ${102}`,
+    new Date(),
+    new Map<string, unknown>(),
+  );
+  const crossReferencingUser2 = new User(
+    103,
+    `User ${103}`,
+    new Date(),
+    new Map<string, unknown>(),
+  );
+
+  crossReferencingUser1.friends.push(crossReferencingUser2);
+  crossReferencingUser2.friends.push(crossReferencingUser1);
+
+  users.push(crossReferencingUser1);
+  users.push(crossReferencingUser2);
 
   const graph: any = {
     users,
@@ -546,6 +591,18 @@ function runCorrectnessChecks(name: string, deserialize: () => any) {
     );
 
     console.log(
+      "Self referencing user:".padEnd(24),
+      passFail(restored.users[100].self === restored.users[100]),
+    );
+
+    console.log(
+      "Cross referencing users:".padEnd(24),
+      passFail(
+        restored.users[101].friends[0].friends[0] === restored.users[101],
+      ),
+    );
+
+    console.log(
       "User metadata Set:".padEnd(24),
       passFail(restored.users[0].metadata.get("tags") instanceof Set),
     );
@@ -600,7 +657,7 @@ function benchmarkCommonGraph() {
 
   const serializationCases: BenchmarkCase[] = [
     {
-      name: "Seriall serialize",
+      name: "seriall serialize",
       fn: () => {
         void seriallSerialize(graph);
       },
@@ -650,7 +707,7 @@ function benchmarkCommonGraph() {
 
   const deserializationCases: BenchmarkCase[] = [
     {
-      name: "Seriall deserialize",
+      name: "seriall deserialize",
       fn: () => {
         void seriallDeserialize(seriallEncoded);
       },
@@ -700,7 +757,7 @@ function benchmarkCommonGraph() {
 
   const roundTripCases: BenchmarkCase[] = [
     {
-      name: "Seriall round-trip",
+      name: "seriall round-trip",
       fn: () => {
         const encoded = seriallSerialize(graph);
         void seriallDeserialize(encoded);
@@ -794,7 +851,7 @@ function benchmarkRichGraph() {
 
   const serializationCases: BenchmarkCase[] = [
     {
-      name: "Seriall serialize",
+      name: "seriall serialize",
       fn: () => {
         void seriallSerialize(graph);
       },
@@ -832,7 +889,7 @@ function benchmarkRichGraph() {
 
   const deserializationCases: BenchmarkCase[] = [
     {
-      name: "Seriall deserialize",
+      name: "seriall deserialize",
       fn: () => {
         void seriallDeserialize(seriallEncoded);
       },
@@ -870,7 +927,7 @@ function benchmarkRichGraph() {
 
   const roundTripCases: BenchmarkCase[] = [
     {
-      name: "Seriall round-trip",
+      name: "seriall round-trip",
       fn: () => {
         const encoded = seriallSerialize(graph);
         void seriallDeserialize(encoded);
