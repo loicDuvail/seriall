@@ -27,12 +27,12 @@ It is **highly configurable**, through the usage of `transformers`
 ## Table of Contents
 
 - [TL;DR](#tldr)
-- [📦 Installation](#installation)
-- [🚀 Usage](#usage)
+- [Installation](#installation)
+- [Usage](#usage)
   - [Basic usage](#basic-usage)
   - [Registering custom classes](#registering-custom-classes)
 - [Supported](#supported)
-- [🧠 Advanced Usages](#advanced-usages)
+- [Advanced Usages](#advanced-usages)
   - [Symbols](#symbols)
   - [Transformers](#transformers)
   - [Custom Class Serialization](#custom-class-serialization)
@@ -40,7 +40,7 @@ It is **highly configurable**, through the usage of `transformers`
 - [Import Notes](#import-notes)
   - [JavaScript](#javascript)
   - [Typescript](#typescript)
-- [🔄 Protocol Versioning](#protocol-versioning)
+- [Protocol Versioning](#protocol-versioning)
   - [Motive](#motive)
   - [Solution](#solution)
   - [Stable top-level structure](#stable-top-level-structure)
@@ -374,7 +374,7 @@ devalue:
 
 ### Conclusion
 
-Among the tested libraries, Seriall was the fastest non-binary serializer overall, while remaining close to devalue in performance on the richer benchmark.
+Among the tested libraries, Seriall was the fastest non-node.js-only serializer overall, while remaining close to devalue in performance on the richer benchmark.
 
 More importantly, Seriall combines this performance with full referential integrity for recursive custom class instances, configurable transformers, built-in type support, and a data-only serialization format.
 
