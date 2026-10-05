@@ -374,7 +374,7 @@ devalue:
 
 ### Conclusion
 
-Among the tested libraries, Seriall was the fastest non-node.js-only serializer overall, while remaining close to devalue in performance on the richer benchmark.
+In these benchmarks, seriall was the fastest of the tested non-Node.js-only serializers on the common graph, while remaining competitive with devalue on the richer graph.
 
 More importantly, Seriall combines this performance with full referential integrity for recursive custom class instances, configurable transformers, built-in type support, and a data-only serialization format.
 
