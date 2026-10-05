@@ -147,7 +147,7 @@ describe("serializer", () => {
 
     it("serializes symbols as object key, with proper config", () => {
       const symbolSerializer = new Serializer({
-        enable: { objectSymbolIndexing: false },
+        enable: { objectSymbolIndexing: true },
       });
       const value = {
         [Symbol("test")]: true,
