@@ -24,7 +24,7 @@ export const primitivesTransformers: TransformerPack = [
         // Symbol.for(undefined) is valid at runtime and behaves as
         // Symbol.for("undefined"), despite TypeScript's stricter signature.
         // @ts-ignore
-        return Symbol.for(encoded.d);
+        return Symbol.for(encoded[0]);
       }
       return Symbol(encoded[0]);
     },
