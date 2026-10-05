@@ -249,7 +249,7 @@ seriall's serialization logic is built around **transformers**.
 A transformer tells seriall how to:
 
 - identify a specific type of value
-- encode it into serializable data
+- encode it into serializable data (always an array for performance reasons)
 - decode that data back into the original type
 
 This makes seriall highly configurable and allows it to support types that are not supported out-of-the-box.
@@ -265,8 +265,8 @@ const transformer = new Transformer({
   id: "url",
   priority: Transformer.PRIORITY.CUSTOM_CLASS,
   match: (value) => value instanceof URL,
-  encode: (value) => value.toString(),
-  decode: (value) => new URL(value),
+  encode: (value) => [value.toString()],
+  decode: ([value]) => new URL(value),
 });
 
 serializer.registerTransformer(transformer);
