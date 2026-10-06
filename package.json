@@ -22,11 +22,11 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist && npm run build:js && npm run build:types",
-    "build:js": "node ./esbuild.js",
-    "build:types": "rollup -c",
-    "build:test": "node ./esbuild.test.js",
-    "build:benchmark": "node ./esbuild.benchmark.js",
-    "test": "npm run build:test && npx jest",
+    "build:js": "node ./config/esbuild.js",
+    "build:types": "rollup -c ./config/rollup.config.mjs",
+    "build:test": "node ./config/esbuild.test.js",
+    "build:benchmark": "node ./config/esbuild.benchmark.js",
+    "test": "npm run build:test && npx jest --config=./config/jest.config.ts",
     "bench": "npm run build:benchmark && node temp/benchmark.js /"
   },
   "keywords": [

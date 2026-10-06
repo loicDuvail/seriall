@@ -6,10 +6,10 @@
     "target": "esnext",
     "moduleResolution": "bundler",
     "module": "esnext",
-    "outDir": "./test",
-    "rootDir": "./src",
+    "outDir": "../test",
+    "rootDir": "../src",
     "strictPropertyInitialization": false,
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*test.ts"]
+  "include": ["../src/**/*test.ts"]
 }
