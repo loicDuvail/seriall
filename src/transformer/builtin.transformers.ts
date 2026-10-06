@@ -72,7 +72,7 @@ export const objectSymbolIndexingTransformer = new Transformer<
     return obj;
   },
   decode: (registerNode) => {
-    const obj = {};
+    const obj = Object.create(null);
     const encoded = registerNode(obj);
     for (const [key, value] of encoded) {
       obj[key] = value;
