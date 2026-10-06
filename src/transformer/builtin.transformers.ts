@@ -57,7 +57,7 @@ export const objectSymbolIndexingTransformer = new Transformer<
   [PropertyKey, Seriall.Serializable][],
   { recursive: true }
 >({
-  id: "obj",
+  id: "[",
   priority: Transformer.PRIORITY.PRIMITIVE,
   recursive: true,
   match: (node) => !Array.isArray(node) && typeof node === "object",
@@ -112,6 +112,56 @@ export const prototypePreserverTransformer = new Transformer<
         enumerable: true,
         writable: true,
         configurable: true,
+      });
+    }
+    return obj;
+  },
+});
+
+type PropertyDescriptor = [any, boolean, boolean, boolean];
+type Property = [PropertyKey, ...PropertyDescriptor];
+
+export const dataDescriptorPreserverTransformer = new Transformer<
+  object,
+  Property[],
+  { recursive: true }
+>({
+  id: "*",
+  recursive: true,
+  priority: Transformer.PRIORITY.PRIMITIVE,
+  match: (node) =>
+    node !== null && !Array.isArray(node) && typeof node === "object",
+  encode: (node) => {
+    const properties: Property[] = [];
+    for (const key of Reflect.ownKeys(node)) {
+      const { value, enumerable, writable, configurable } =
+        Object.getOwnPropertyDescriptor(node, key)!;
+
+      if (!value) {
+        throw new Error(
+          `Cannot preserve accessor property "${String(key)}" with data descriptor preservation`,
+        );
+      }
+
+      properties.push([
+        key,
+        value,
+        enumerable ?? false,
+        writable ?? false,
+        configurable ?? false,
+      ]);
+    }
+    return properties;
+  },
+  decode: (registerNode) => {
+    const obj = {};
+    const properties = registerNode(obj);
+    for (const [key, value, enumerable, writable, configurable] of properties) {
+      Object.defineProperty(obj, key, {
+        value,
+        enumerable,
+        writable,
+        configurable,
       });
     }
     return obj;

@@ -36,8 +36,8 @@ export namespace Seriall {
     type NoData = undefined;
 
     type Encoded<Recursive extends boolean> = Recursive extends false
-      ? (JsonPrimitive | object | Encoded<false>)[] | NoData
-      : (JsonPrimitive | object | Encoded<true>)[];
+      ? (JsonPrimitive | symbol | object | Encoded<false>)[] | NoData
+      : (JsonPrimitive | symbol | object | Encoded<true>)[];
 
     type Id = string | number;
 
@@ -78,6 +78,7 @@ export namespace Seriall {
       builtinNativeClasses: boolean;
       objectSymbolIndexing: boolean;
       preservePrototype: boolean;
+      preserveDataDescriptors: boolean;
     };
     classes: Record<Seriall.Transformer.Id, typeof SerializableClass>;
   };

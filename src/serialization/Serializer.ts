@@ -1,6 +1,7 @@
 import { deserialize, serialize } from ".";
 import {
   createClassTransformer,
+  dataDescriptorPreserverTransformer,
   nativeClassesTransformers,
   objectSymbolIndexingTransformer,
   primitivesTransformers,
@@ -16,6 +17,7 @@ const defaultOptions: Seriall.Options = {
     builtinNativeClasses: true,
     objectSymbolIndexing: false,
     preservePrototype: false,
+    preserveDataDescriptors: false,
   },
   classes: {},
 };
@@ -36,12 +38,12 @@ export class Serializer {
       primitivesTransformers.forEach(this.registerTransformer);
     if (opt.enable.builtinNativeClasses)
       nativeClassesTransformers.forEach(this.registerTransformer);
-    if (opt.enable.preservePrototype) {
+    if (opt.enable.preservePrototype)
       this.registerTransformer(prototypePreserverTransformer);
-    }
-    if (opt.enable.objectSymbolIndexing) {
+    if (opt.enable.preserveDataDescriptors)
+      this.registerTransformer(dataDescriptorPreserverTransformer);
+    if (opt.enable.objectSymbolIndexing)
       this.registerTransformer(objectSymbolIndexingTransformer);
-    }
 
     for (const className in opt.classes) {
       this.registerClass(className, opt.classes[className]);
