@@ -205,12 +205,6 @@ export const dataDescriptorPreserverTransformer = new Transformer<
       const { value, enumerable, writable, configurable } =
         Object.getOwnPropertyDescriptor(node, key)!;
 
-      if (!value) {
-        throw new Error(
-          `Cannot preserve accessor property "${String(key)}" with data descriptor preservation`,
-        );
-      }
-
       properties.push([
         key,
         value,
