@@ -6,8 +6,7 @@ import {
   primitivesTransformers,
   type SerializableClass,
 } from "../transformer";
-import type { DeepOptional } from "../types";
-import type { Seriall } from "../types";
+import type { DeepOptional, Seriall } from "../types";
 import { deepMerge } from "../utils";
 
 type SerializerOptions = {
@@ -17,6 +16,9 @@ type SerializerOptions = {
     objectSymbolIndexing: boolean;
   };
   classes: Record<Seriall.Transformer.Id, typeof SerializableClass>;
+  performance: {
+    optimizedClassSerialization: boolean;
+  };
 };
 
 const defaultOptions: SerializerOptions = {
@@ -26,6 +28,9 @@ const defaultOptions: SerializerOptions = {
     objectSymbolIndexing: false,
   },
   classes: {},
+  performance: {
+    optimizedClassSerialization: false,
+  },
 };
 
 export class Serializer {
