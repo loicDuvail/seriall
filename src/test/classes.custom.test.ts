@@ -1,10 +1,7 @@
-import { SerializableClass } from "../transformer";
-import { serializer } from "./setup";
+import { serializer, TestEntity } from "./setup";
 
 describe("class registration", () => {
   it("registers and deregisters custom classes", () => {
-    class TestEntity extends SerializableClass {}
-
     expect(() => {
       serializer.registerClass("TestEntity", TestEntity);
     }).not.toThrow();
@@ -15,10 +12,8 @@ describe("class registration", () => {
   });
 
   it("serializes custom class instances", () => {
-    class TestEntity extends SerializableClass {}
-
     serializer.registerClass("TestEntity", TestEntity);
-    const testInstance = new TestEntity();
+    const testInstance = new TestEntity({ name: "test" });
 
     expect(
       serializer.deserialize(serializer.serialize(testInstance)),
@@ -28,18 +23,6 @@ describe("class registration", () => {
   });
 
   it("serializes custom class instances with circular references", () => {
-    class TestEntity extends SerializableClass {
-      name: string;
-      parent: TestEntity | undefined;
-      children: TestEntity[] = [];
-      self: TestEntity | undefined;
-
-      constructor({ name }: { name: string }) {
-        super();
-        this.name = name;
-      }
-    }
-
     serializer.registerClass("TestEntity", TestEntity);
 
     const parent = new TestEntity({ name: "parent" });
