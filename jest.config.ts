@@ -1,7 +1,7 @@
 import type { Config } from "jest";
 
 const config: Config = {
-  rootDir: "./test",
+  rootDir: "./temp",
 };
 
 export default config;

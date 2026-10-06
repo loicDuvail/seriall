@@ -1,0 +1,9 @@
+import "./primitives.test";
+import "./numbers.test";
+import "./arrays.test";
+import "./objects.test";
+import "./classes.native.test";
+import "./classes.custom.test";
+import "./symbols.test";
+import "./complex.test";
+import "./protocol.test";

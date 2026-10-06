@@ -27,7 +27,7 @@
     "build:test": "node ./esbuild.test.js",
     "build:benchmark": "node ./esbuild.benchmark.js",
     "test": "npm run build:test && npx jest",
-    "bench": "npm run build:benchmark && node benchmark/benchmark.js /"
+    "bench": "npm run build:benchmark && node temp/benchmark.js /"
   },
   "keywords": [
     "serializer",

@@ -6,6 +6,6 @@ await esbuild.build({
   sourcemap: false,
   minify: false,
   format: "esm",
-  outfile: "benchmark/benchmark.js",
+  outfile: "temp/benchmark.js",
   platform: "node",
 });
