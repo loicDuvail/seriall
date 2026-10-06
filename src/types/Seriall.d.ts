@@ -1,3 +1,5 @@
+import type { SerializableClass } from "../transformer";
+
 export namespace Seriall {
   export type Serializable =
     | JsonPrimitive
@@ -68,5 +70,15 @@ export namespace Seriall {
     match: Transformer.Matcher<Decoded>;
     encode: Transformer.Encoder<Decoded, Encoded, Recursive>;
     decode: Transformer.Decoder<Encoded, Decoded, Recursive>;
+  };
+
+  export type Options = {
+    enable: {
+      builtinPrimitiveTransformers: boolean;
+      builtinNativeClasses: boolean;
+      objectSymbolIndexing: boolean;
+      preservePrototype: boolean;
+    };
+    classes: Record<Seriall.Transformer.Id, typeof SerializableClass>;
   };
 }

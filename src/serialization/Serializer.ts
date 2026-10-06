@@ -4,33 +4,20 @@ import {
   nativeClassesTransformers,
   objectSymbolIndexingTransformer,
   primitivesTransformers,
+  prototypePreserverTransformer,
   type SerializableClass,
 } from "../transformer";
 import type { DeepOptional, Seriall } from "../types";
 import { deepMerge } from "../utils";
 
-type SerializerOptions = {
-  enable: {
-    builtinPrimitiveTransformers: boolean;
-    builtinNativeClasses: boolean;
-    objectSymbolIndexing: boolean;
-  };
-  classes: Record<Seriall.Transformer.Id, typeof SerializableClass>;
-  performance: {
-    optimizedClassSerialization: boolean;
-  };
-};
-
-const defaultOptions: SerializerOptions = {
+const defaultOptions: Seriall.Options = {
   enable: {
     builtinPrimitiveTransformers: true,
     builtinNativeClasses: true,
     objectSymbolIndexing: false,
+    preservePrototype: false,
   },
   classes: {},
-  performance: {
-    optimizedClassSerialization: false,
-  },
 };
 
 export class Serializer {
@@ -40,13 +27,18 @@ export class Serializer {
     Seriall.Transformer
   > = {};
 
-  constructor(options: DeepOptional<SerializerOptions> = {}) {
-    const opt = deepMerge<SerializerOptions>(defaultOptions, options);
+  constructor(options: DeepOptional<Seriall.Options> = {}) {
+    const opt = deepMerge<Seriall.Options>(defaultOptions, options);
 
+    // transformer registration ordering is intentional
+    // only change this code mindfully
     if (opt.enable.builtinPrimitiveTransformers)
       primitivesTransformers.forEach(this.registerTransformer);
     if (opt.enable.builtinNativeClasses)
       nativeClassesTransformers.forEach(this.registerTransformer);
+    if (opt.enable.preservePrototype) {
+      this.registerTransformer(prototypePreserverTransformer);
+    }
     if (opt.enable.objectSymbolIndexing) {
       this.registerTransformer(objectSymbolIndexingTransformer);
     }

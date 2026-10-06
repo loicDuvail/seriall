@@ -81,6 +81,43 @@ export const objectSymbolIndexingTransformer = new Transformer<
   },
 });
 
+type Prototype = object | null;
+type Properties = Record<PropertyKey, unknown>;
+
+export const prototypePreserverTransformer = new Transformer<
+  object,
+  [Prototype, Properties],
+  { recursive: true }
+>({
+  id: "_",
+  recursive: true,
+  priority: Transformer.PRIORITY.PRIMITIVE,
+  match: (node) =>
+    node !== null && !Array.isArray(node) && typeof node === "object",
+  encode: (node) => {
+    const properties = Object.create(null);
+    for (const key of Reflect.ownKeys(node)) {
+      properties[key] = node[key];
+    }
+    const prototype = Object.getPrototypeOf(node);
+    return [prototype, properties];
+  },
+  decode: (registerNode) => {
+    const obj = {};
+    const [prototype, properties] = registerNode(obj);
+    Object.setPrototypeOf(obj, prototype);
+    for (const key of Reflect.ownKeys(properties)) {
+      Object.defineProperty(obj, key, {
+        value: properties[key],
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return obj;
+  },
+});
+
 export const nativeClassesTransformers: TransformerPack = [
   new Transformer<Date, [number]>({
     id: "Dte",
