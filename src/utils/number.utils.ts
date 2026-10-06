@@ -1,5 +1,10 @@
 export const isSpecialNumber = (value: number): boolean => {
-  return [Infinity, -Infinity, NaN].includes(value) || Object.is(value, -0);
+  return (
+    value === Infinity ||
+    value === -Infinity ||
+    Number.isNaN(value) ||
+    Object.is(value, -0)
+  );
 };
 
 export const encodeSpecialNumber = (value: number): [0 | 1 | 2 | 3] => {
