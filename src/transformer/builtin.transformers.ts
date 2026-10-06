@@ -52,6 +52,74 @@ export const primitivesTransformers: TransformerPack = [
   }),
 ];
 
+export const nativeClassesTransformers: TransformerPack = [
+  new Transformer<Date, [number]>({
+    id: "Dte",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    match: (node) => node instanceof Date,
+    encode: (node) => [node.getTime()],
+    decode: ([node]) => new Date(node),
+  }),
+  new Transformer<Set<any>, any[], { recursive: true }>({
+    id: "Set",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    recursive: true,
+    match: (node) => node instanceof Set,
+    encode: (node) => Array.from(node),
+    decode: (registerNode) => {
+      const set = new Set();
+      const encoded = registerNode(set);
+      for (const element of encoded) {
+        set.add(element);
+      }
+      return set;
+    },
+  }),
+  new Transformer<Map<any, any>, [any, any][], { recursive: true }>({
+    id: "Map",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    recursive: true,
+    match: (node) => node instanceof Map,
+    encode: (node) => Array.from(node),
+    decode: (registerNode) => {
+      const map = new Map();
+      const encoded = registerNode(map);
+      for (const [key, value] of encoded) {
+        map.set(key, value);
+      }
+      return map;
+    },
+  }),
+  new Transformer<RegExp, [string, string]>({
+    id: "Rgx",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    match: (node) => node instanceof RegExp,
+    encode: (node) => [node.source, node.flags],
+    decode: (node) => new RegExp(node[0], node[1]),
+  }),
+  new Transformer<String, [string]>({
+    id: "Str",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    match: (node) => node instanceof String,
+    encode: (node) => [node.valueOf()],
+    decode: ([node]) => new String(node),
+  }),
+  new Transformer<Number, [number]>({
+    id: "Num",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    match: (node) => node instanceof Number,
+    encode: (node) => [node.valueOf()],
+    decode: ([node]) => new Number(node),
+  }),
+  new Transformer<Boolean, [boolean]>({
+    id: "Bol",
+    priority: Transformer.PRIORITY.NATIVE_CLASS,
+    match: (node) => node instanceof Boolean,
+    encode: (node) => [node.valueOf()],
+    decode: ([node]) => new Boolean(node),
+  }),
+];
+
 export const objectSymbolIndexingTransformer = new Transformer<
   object,
   [PropertyKey, Seriall.Serializable][],
@@ -167,71 +235,3 @@ export const dataDescriptorPreserverTransformer = new Transformer<
     return obj;
   },
 });
-
-export const nativeClassesTransformers: TransformerPack = [
-  new Transformer<Date, [number]>({
-    id: "Dte",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    match: (node) => node instanceof Date,
-    encode: (node) => [node.getTime()],
-    decode: ([node]) => new Date(node),
-  }),
-  new Transformer<Set<any>, any[], { recursive: true }>({
-    id: "Set",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    recursive: true,
-    match: (node) => node instanceof Set,
-    encode: (node) => Array.from(node),
-    decode: (registerNode) => {
-      const set = new Set();
-      const encoded = registerNode(set);
-      for (const element of encoded) {
-        set.add(element);
-      }
-      return set;
-    },
-  }),
-  new Transformer<Map<any, any>, [any, any][], { recursive: true }>({
-    id: "Map",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    recursive: true,
-    match: (node) => node instanceof Map,
-    encode: (node) => Array.from(node),
-    decode: (registerNode) => {
-      const map = new Map();
-      const encoded = registerNode(map);
-      for (const [key, value] of encoded) {
-        map.set(key, value);
-      }
-      return map;
-    },
-  }),
-  new Transformer<RegExp, [string, string]>({
-    id: "Rgx",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    match: (node) => node instanceof RegExp,
-    encode: (node) => [node.source, node.flags],
-    decode: (node) => new RegExp(node[0], node[1]),
-  }),
-  new Transformer<String, [string]>({
-    id: "Str",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    match: (node) => node instanceof String,
-    encode: (node) => [node.valueOf()],
-    decode: ([node]) => new String(node),
-  }),
-  new Transformer<Number, [number]>({
-    id: "Num",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    match: (node) => node instanceof Number,
-    encode: (node) => [node.valueOf()],
-    decode: ([node]) => new Number(node),
-  }),
-  new Transformer<Boolean, [boolean]>({
-    id: "Bol",
-    priority: Transformer.PRIORITY.NATIVE_CLASS,
-    match: (node) => node instanceof Boolean,
-    encode: (node) => [node.valueOf()],
-    decode: ([node]) => new Boolean(node),
-  }),
-];
