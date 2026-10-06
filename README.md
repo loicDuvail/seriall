@@ -34,9 +34,10 @@ It is **highly configurable**, through the usage of `transformers`
 - [Supported](#supported)
 - [Advanced Usages](#advanced-usages)
   - [Symbols](#symbols)
-  - [Prototype Preservation](#prototype-preservation)
   - [Transformers](#transformers)
   - [Custom Class Serialization](#custom-class-serialization)
+  - [Prototype Preservation](#prototype-preservation)
+  - [Data Descriptor Preservation](#data-descriptor-preservation)
 - [Benchmark](#benchmark)
 - [Import Notes](#import-notes)
   - [JavaScript](#javascript)
@@ -243,28 +244,6 @@ console.log(restored.key === restoredKey);
 
 This works because seriall preserves the object graph, rather than simply converting values to JSON.
 
-### Prototype Preservation
-
-By default, Seriall serializes objects as data containers without preserving their prototype chains. This keeps the serialized representation simple and makes deserialized objects safe to use as data containers.
-
-If you need to preserve the prototype structure of your objects, you can enable prototype preservation:
-
-```ts
-const serializer = new Serializer({
-  enable: {
-    preservePrototype: true,
-  },
-});
-```
-
-When enabled, Seriall represents an object's prototype as another node in the serialization graph. This means prototype relationships are preserved by reference, just like any other object relationship.
-
-Prototype preservation also maintains **referential integrity**. If multiple objects share the same prototype, they will continue to share the same revived prototype after deserialization. Cyclic references are also supported by the graph-based serializer.
-
-The object's own string and symbol properties are serialized. Property descriptors are not currently preserved; serialized properties are restored as normal writable, enumerable, and configurable properties.
-
-> **Note:** Prototype preservation is intended for cases where an object's prototype is meaningful to the data being serialized. If objects are primarily being used as dictionaries, leaving this option disabled is generally preferable.
-
 ### Transformers
 
 seriall's serialization logic is built around **transformers**.
@@ -345,6 +324,88 @@ class MyClass extends SerializableClass {
   };
 }
 ```
+
+### Prototype Preservation
+
+By default, Seriall serializes objects as data containers without preserving their prototype chains. This keeps the serialized representation simple and makes deserialized objects safe to use as data containers.
+
+If you need to preserve the prototype structure of your objects, you can enable prototype preservation:
+
+```ts
+const serializer = new Serializer({
+  enable: {
+    preservePrototype: true,
+  },
+});
+```
+
+When enabled, Seriall represents an object's prototype as another node in the serialization graph. This means prototype relationships are preserved by reference, just like any other object relationship.
+
+Prototype preservation also maintains **referential integrity**. If multiple objects share the same prototype, they will continue to share the same revived prototype after deserialization. Cyclic references are also supported by the graph-based serializer.
+
+The object's own string and symbol properties are serialized. Property descriptors are not currently preserved; serialized properties are restored as normal writable, enumerable, and configurable properties.
+
+> **Note:** Prototype preservation is intended for cases where an object's prototype is meaningful to the data being serialized. If objects are primarily being used as dictionaries, leaving this option disabled is generally preferable.
+
+### Data Descriptor Preservation
+
+By default, seriall serializes an object's property values without preserving their property descriptors. This means properties are recreated as regular writable, enumerable, and configurable properties.
+
+If you need to preserve **data property descriptors**, enable `preserveDataDescriptors`:
+
+```ts
+const serializer = new Serializer({
+  enable: {
+    preserveDataDescriptors: true,
+  },
+});
+```
+
+For example:
+
+```ts
+const object = {};
+
+Object.defineProperty(object, "value", {
+  value: 42,
+  enumerable: false,
+  writable: false,
+  configurable: false,
+});
+
+const revived = serializer.deserialize(serializer.serialize(object));
+
+Object.getOwnPropertyDescriptor(revived, "value");
+// {
+//   value: 42,
+//   enumerable: false,
+//   writable: false,
+//   configurable: false
+// }
+```
+
+Property keys are serialized as graph values, so symbol keys are also supported when this mode is enabled:
+
+```ts
+const key = Symbol("key");
+
+const object = {
+  [key]: 42,
+};
+
+const revived = serializer.deserialize(serializer.serialize(object));
+
+const revivedKey = Object.getOwnPropertySymbols(revived)[0];
+
+revived[revivedKey];
+// 42
+```
+
+Because symbols are represented as graph nodes, multiple references to the same symbol retain their referential identity after deserialization.
+
+preserveDataDescriptors currently preserves data descriptors (value, writable, enumerable, and configurable). Accessor descriptors (get / set) are not preserved by this transformer.
+
+This option is disabled by default.
 
 ## Benchmark
 
