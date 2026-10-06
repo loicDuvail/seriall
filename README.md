@@ -34,6 +34,7 @@ It is **highly configurable**, through the usage of `transformers`
 - [Supported](#supported)
 - [Advanced Usages](#advanced-usages)
   - [Symbols](#symbols)
+  - [Prototype Preservation](#prototype-preservation)
   - [Transformers](#transformers)
   - [Custom Class Serialization](#custom-class-serialization)
 - [Benchmark](#benchmark)
@@ -241,6 +242,28 @@ console.log(restored.key === restoredKey);
 ```
 
 This works because seriall preserves the object graph, rather than simply converting values to JSON.
+
+### Prototype Preservation
+
+By default, Seriall serializes objects as data containers without preserving their prototype chains. This keeps the serialized representation simple and makes deserialized objects safe to use as data containers.
+
+If you need to preserve the prototype structure of your objects, you can enable prototype preservation:
+
+```ts
+const serializer = new Serializer({
+  enable: {
+    preservePrototype: true,
+  },
+});
+```
+
+When enabled, Seriall represents an object's prototype as another node in the serialization graph. This means prototype relationships are preserved by reference, just like any other object relationship.
+
+Prototype preservation also maintains **referential integrity**. If multiple objects share the same prototype, they will continue to share the same revived prototype after deserialization. Cyclic references are also supported by the graph-based serializer.
+
+The object's own string and symbol properties are serialized. Property descriptors are not currently preserved; serialized properties are restored as normal writable, enumerable, and configurable properties.
+
+> **Note:** Prototype preservation is intended for cases where an object's prototype is meaningful to the data being serialized. If objects are primarily being used as dictionaries, leaving this option disabled is generally preferable.
 
 ### Transformers
 
