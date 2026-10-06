@@ -53,7 +53,7 @@ export const deserialize = (
 
     // if node is serialized plain object
     if (!Array.isArray(node) && typeof node === "object") {
-      const obj = {};
+      const obj = Object.create(null);
       revived[index] = obj;
       for (const key of Object.keys(node)) {
         obj[key] = reviveNode(node[key]);
