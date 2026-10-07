@@ -1,4 +1,4 @@
-import type { AnyClass, Seriall } from "../types";
+import type { AnyClass, Seriall } from "@types";
 import { Transformer } from "./Transformer";
 
 const ENCODE = Symbol("encode");

@@ -8,7 +8,7 @@ import { stringify as flattedStringify, parse as flattedParse } from "flatted";
 import * as devalue from "devalue";
 import superjson from "superjson";
 
-import { Serializer, Transformer } from "../index";
+import { Serializer, Transformer } from "@";
 
 // =============================================================================
 // Configuration

@@ -4,9 +4,9 @@ import {
   NO_TRANSFORM_DATA,
   PROTOCOL_VERSION,
   SIGNATURE_INDEX,
-} from "../const";
-import type { Seriall } from "../types/Seriall";
-import { isJsonPrimitive } from "../utils";
+} from "@const";
+import type { Seriall } from "@types";
+import { isJsonPrimitive } from "@utils";
 
 export const serialize = (
   data: Seriall.Serializable,

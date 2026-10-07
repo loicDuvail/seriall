@@ -8,8 +8,17 @@
     "outDir": "../dist",
     "rootDir": "../src",
     "strictPropertyInitialization": false,
-    "types": ["node"]
+    "types": ["node", "jest"],
+    "paths": {
+      "@": ["../src"],
+      "@/*": ["../src/*"],
+      "@types": ["../src/types"],
+      "@types/*": ["../src/types/*"],
+      "@const": ["../src/const"],
+      "@const/*": ["../src/const/*"],
+      "@utils": ["../src/utils"],
+      "@utils/*": ["../src/utils/*"]
+    }
   },
-  "include": ["../src/**/*.ts"],
-  "exclude": ["../src/test/**/*", "../src/benchmark/**/*"]
+  "include": ["../src/**/*.ts"]
 }

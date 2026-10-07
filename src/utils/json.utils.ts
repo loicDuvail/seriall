@@ -1,4 +1,4 @@
-import type { Seriall } from "../types";
+import type { Seriall } from "@types";
 import { isSpecialNumber } from "./number.utils";
 
 export const isJsonPrimitive = (

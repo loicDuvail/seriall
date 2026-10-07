@@ -1,4 +1,4 @@
-import type { Seriall } from "../types";
+import type { Seriall } from "@types";
 
 export const isSpecialNumber = (value: Seriall.Serializable): boolean => {
   return (

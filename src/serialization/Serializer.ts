@@ -6,9 +6,9 @@ import {
   objectSymbolIndexingTransformer,
   primitivesTransformers,
   prototypePreserverTransformer,
-} from "../transformer";
-import type { AnyClass, DeepOptional, Seriall } from "../types";
-import { deepMerge } from "../utils";
+} from "@/transformer";
+import type { AnyClass, DeepOptional, Seriall } from "@types";
+import { deepMerge } from "@utils";
 
 const defaultOptions: Seriall.Options = {
   enable: {

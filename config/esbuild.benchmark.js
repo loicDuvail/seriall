@@ -7,5 +7,6 @@ await esbuild.build({
   minify: false,
   format: "esm",
   outfile: "temp/benchmark.js",
+  tsconfig: "config/tsconfig.json",
   platform: "node",
 });

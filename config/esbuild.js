@@ -5,6 +5,7 @@ const common = {
   bundle: true,
   sourcemap: false,
   minify: false,
+  tsconfig: "config/tsconfig.json",
 };
 
 await Promise.all([

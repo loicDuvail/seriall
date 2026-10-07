@@ -1,4 +1,4 @@
-import type { Seriall } from "../types/Seriall";
+import type { Seriall } from "@types";
 
 export const SIGNATURE_INDEX = 0 as const;
 export const DATA_INDEX = 1 as const;

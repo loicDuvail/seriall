@@ -1,12 +1,13 @@
 import * as esbuild from "esbuild";
+import { TsconfigPathsPlugin } from "@esbuild-plugins/tsconfig-paths";
 
-esbuild.build({
+await esbuild.build({
   entryPoints: ["src/test/index.ts"],
   bundle: true,
   minify: false,
   sourcemap: false,
   outfile: "temp/test.js",
-  target: ["esnext"],
+  target: "esnext",
   external: ["@jest/globals"],
-  loader: { ".ts": "ts" },
+  tsconfig: "config/tsconfig.json",
 });

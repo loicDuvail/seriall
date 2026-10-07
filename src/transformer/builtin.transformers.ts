@@ -1,12 +1,12 @@
-import { NO_TRANSFORM_DATA } from "../const";
-import type { Seriall } from "../types";
+import { NO_TRANSFORM_DATA } from "@const";
+import type { Seriall } from "@types";
 import {
   decodeFlags,
   decodeSpecialNumber,
   encodeFlags,
   encodeSpecialNumber,
   isSpecialNumber,
-} from "../utils";
+} from "@utils";
 import { Transformer } from "./Transformer";
 
 // transformers for all non-json-primitive primitives

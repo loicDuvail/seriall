@@ -1,4 +1,4 @@
-import type { DeepOptional } from "../types";
+import type { DeepOptional } from "@types";
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null &&

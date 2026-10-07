@@ -1,5 +1,5 @@
-import { PRIORITY } from "../const";
-import type { DeepOptional, Seriall } from "../types";
+import { PRIORITY } from "@const";
+import type { Seriall } from "@types";
 
 type TransformerParams<
   Decoded extends Seriall.Transformer.Decoded,

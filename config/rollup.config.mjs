@@ -1,20 +1,27 @@
 import dts from "rollup-plugin-dts";
 
+const common = {
+  input: "src/index.ts",
+  plugins: [
+    dts({
+      tsconfig: "config/tsconfig.json",
+    }),
+  ],
+};
+
 export default [
   {
-    input: "src/index.ts",
+    ...common,
     output: {
       file: "dist/index.d.mts",
       format: "es",
     },
-    plugins: [dts()],
   },
   {
-    input: "src/index.ts",
+    ...common,
     output: {
       file: "dist/index.d.cts",
       format: "es",
     },
-    plugins: [dts()],
   },
 ];

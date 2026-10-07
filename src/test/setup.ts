@@ -1,5 +1,5 @@
-import { Serializer } from "../serialization";
-import type { Seriall } from "../types";
+import { Serializer } from "@/serialization";
+import type { Seriall } from "@types";
 
 export const serializer = new Serializer();
 
