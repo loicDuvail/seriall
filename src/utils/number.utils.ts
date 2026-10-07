@@ -1,4 +1,6 @@
-export const isSpecialNumber = (value: number): boolean => {
+import type { Seriall } from "../types";
+
+export const isSpecialNumber = (value: Seriall.Serializable): boolean => {
   return (
     value === Infinity ||
     value === -Infinity ||
@@ -29,4 +31,21 @@ export const decodeSpecialNumber = ([value]: [0 | 1 | 2 | 3]) => {
     default:
       throw new Error(value + " is not a special number");
   }
+};
+
+export const encodeFlags = (...flags: boolean[]) => {
+  let encoded = 0;
+  for (let i = 0; i < flags.length; i++) {
+    encoded += (flags[i] ? 1 : 0) * 2 ** i;
+  }
+  return encoded;
+};
+
+export const decodeFlags = (encoded: number, flagsCount: number) => {
+  if (flagsCount > 32) throw new Error("Can't have more than 32 flags");
+  const flags: boolean[] = [];
+  for (let i = 0; i < flagsCount; i++) {
+    flags[i] = ((encoded >> i) & 1) === 1;
+  }
+  return flags;
 };

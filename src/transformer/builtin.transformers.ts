@@ -1,7 +1,9 @@
 import { NO_TRANSFORM_DATA } from "../const";
 import type { Seriall } from "../types";
 import {
+  decodeFlags,
   decodeSpecialNumber,
+  encodeFlags,
   encodeSpecialNumber,
   isSpecialNumber,
 } from "../utils";
@@ -192,7 +194,8 @@ export const prototypePreserverTransformer = new Transformer<
   },
 });
 
-type PropertyDescriptor = [Seriall.Serializable, boolean, boolean, boolean];
+type EncodedDataDescriptors = number;
+type PropertyDescriptor = [Seriall.Serializable, EncodedDataDescriptors];
 type Property = [PropertyKey, ...PropertyDescriptor];
 
 export const dataDescriptorPreserverTransformer = new Transformer<
@@ -211,20 +214,21 @@ export const dataDescriptorPreserverTransformer = new Transformer<
       const { value, enumerable, writable, configurable } =
         Object.getOwnPropertyDescriptor(node, key)!;
 
-      properties.push([
-        key,
-        value,
+      const encoded = encodeFlags(
         enumerable ?? false,
         writable ?? false,
         configurable ?? false,
-      ]);
+      );
+
+      properties.push([key, value, encoded]);
     }
     return properties;
   },
   decode: (registerNode) => {
     const obj = {};
     const properties = registerNode(obj);
-    for (const [key, value, enumerable, writable, configurable] of properties) {
+    for (const [key, value, encoded] of properties) {
+      const [enumerable, writable, configurable] = decodeFlags(encoded, 3);
       Object.defineProperty(obj, key, {
         value,
         enumerable,
