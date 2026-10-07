@@ -27,7 +27,8 @@
     "build:test": "node ./config/esbuild.test.js",
     "build:benchmark": "node ./config/esbuild.benchmark.js",
     "test": "npm run build:test && npx jest --config=./config/jest.config.ts",
-    "bench": "npm run build:benchmark && node temp/benchmark.js /"
+    "bench": "npm run build:benchmark && node temp/benchmark.js /",
+    "typecheck": "tsc -p ./config/tsconfig.json --noEmit"
   },
   "keywords": [
     "serializer",

@@ -10,10 +10,7 @@ import {
 
 export const deserialize = (
   data: string,
-  transformers: Record<
-    Seriall.Transformer.Id,
-    Seriall.Transformer<boolean, any, any>
-  >,
+  transformers: Record<Seriall.Transformer.Id, Seriall.Transformer>,
 ) => {
   const { lib, v, d } = JSON.parse(data);
 
@@ -88,10 +85,16 @@ export const deserialize = (
       throw new Error(`No transformer found with id "${transformerId}"`);
     }
 
-    const nonRecursiveTransformer = transformer as Seriall.Transformer<
-      false,
-      any,
-      any
+    const nonRecursiveTransformer =
+      transformer as unknown as Seriall.Transformer<
+        Seriall.Transformer.Decoded,
+        Seriall.Transformer.Encoded,
+        { recursive: false }
+      >;
+    const recursiveTransformer = transformer as unknown as Seriall.Transformer<
+      Seriall.Transformer.Decoded,
+      Seriall.Transformer.Encoded,
+      { recursive: true }
     >;
 
     if (!transformer.recursive && typedNode[DATA_INDEX] === undefined) {
@@ -111,17 +114,22 @@ export const deserialize = (
     }
 
     const registerNode: Parameters<
-      Seriall.Transformer.Decoder<any, any, true>
+      Seriall.Transformer.Decoder<
+        Seriall.Transformer.Encoded,
+        Seriall.Transformer.Decoded,
+        { recursive: true }
+      >
     >[0] = (node) => {
       revived[index] = node;
       const revivedValues = new Array(typedNode.length - 1);
       for (let i = 1; i < typedNode.length; i++) {
-        revivedValues[i - 1] = reviveNode(typedNode[i] as number);
+        const nodeId = typedNode[i] as Seriall.Serialized.NodeId;
+        revivedValues[i - 1] = reviveNode(nodeId);
       }
       return revivedValues;
     };
 
-    return transformer.decode(registerNode);
+    return recursiveTransformer.decode(registerNode);
   };
 
   return reviveNode(0);

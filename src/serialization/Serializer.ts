@@ -6,9 +6,8 @@ import {
   objectSymbolIndexingTransformer,
   primitivesTransformers,
   prototypePreserverTransformer,
-  type SerializableClass,
 } from "../transformer";
-import type { DeepOptional, Seriall } from "../types";
+import type { AnyClass, DeepOptional, Seriall } from "../types";
 import { deepMerge } from "../utils";
 
 const defaultOptions: Seriall.Options = {
@@ -55,7 +54,7 @@ export class Serializer {
 
   deserialize = (data: string) => deserialize(data, this.transformersRecord);
 
-  registerTransformer = (transformer: Seriall.Transformer) => {
+  registerTransformer = (transformer: Seriall.AnyTransformer) => {
     if (transformer.id in this.transformersRecord) {
       throw new Error(
         `A transformer with id "${transformer.id}" is already registered, chose another one`,
@@ -88,7 +87,7 @@ export class Serializer {
     delete this.transformersRecord[id];
   };
 
-  registerClass = (name: string, clazz: typeof SerializableClass) => {
+  registerClass = (name: string, clazz: AnyClass) => {
     this.registerTransformer(createClassTransformer("$" + name, clazz));
   };
 

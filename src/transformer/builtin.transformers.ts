@@ -1,5 +1,5 @@
 import { NO_TRANSFORM_DATA } from "../const";
-import type { Seriall } from "../types/Seriall";
+import type { Seriall } from "../types";
 import {
   decodeSpecialNumber,
   encodeSpecialNumber,
@@ -7,10 +7,8 @@ import {
 } from "../utils";
 import { Transformer } from "./Transformer";
 
-type TransformerPack = Seriall.Transformer[];
-
 // transformers for all non-json-primitive primitives
-export const primitivesTransformers: TransformerPack = [
+export const primitivesTransformers: Seriall.AnyTransformer[] = [
   new Transformer<symbol, [string | undefined, 0 | 1]>({
     id: "sym",
     priority: Transformer.PRIORITY.PRIMITIVE,
@@ -52,7 +50,7 @@ export const primitivesTransformers: TransformerPack = [
   }),
 ];
 
-export const nativeClassesTransformers: TransformerPack = [
+export const nativeClassesTransformers: Seriall.AnyTransformer[] = [
   new Transformer<Date, [number]>({
     id: "Dte",
     priority: Transformer.PRIORITY.NATIVE_CLASS,
@@ -60,14 +58,18 @@ export const nativeClassesTransformers: TransformerPack = [
     encode: (node) => [node.getTime()],
     decode: ([node]) => new Date(node),
   }),
-  new Transformer<Set<any>, any[], { recursive: true }>({
+  new Transformer<
+    Set<Seriall.Serializable>,
+    Seriall.Serializable[],
+    { recursive: true }
+  >({
     id: "Set",
     priority: Transformer.PRIORITY.NATIVE_CLASS,
     recursive: true,
     match: (node) => node instanceof Set,
     encode: (node) => Array.from(node),
     decode: (registerNode) => {
-      const set = new Set();
+      const set = new Set<Seriall.Serializable>();
       const encoded = registerNode(set);
       for (const element of encoded) {
         set.add(element);
@@ -75,7 +77,11 @@ export const nativeClassesTransformers: TransformerPack = [
       return set;
     },
   }),
-  new Transformer<Map<any, any>, [any, any][], { recursive: true }>({
+  new Transformer<
+    Map<Seriall.Serializable, Seriall.Serializable>,
+    [Seriall.Serializable, Seriall.Serializable][],
+    { recursive: true }
+  >({
     id: "Map",
     priority: Transformer.PRIORITY.NATIVE_CLASS,
     recursive: true,
@@ -121,7 +127,7 @@ export const nativeClassesTransformers: TransformerPack = [
 ];
 
 export const objectSymbolIndexingTransformer = new Transformer<
-  object,
+  Record<PropertyKey, Seriall.Serializable>,
   [PropertyKey, Seriall.Serializable][],
   { recursive: true }
 >({
@@ -150,10 +156,10 @@ export const objectSymbolIndexingTransformer = new Transformer<
 });
 
 type Prototype = object | null;
-type Properties = Record<PropertyKey, unknown>;
+type Properties = Record<PropertyKey, Seriall.Serializable>;
 
 export const prototypePreserverTransformer = new Transformer<
-  object,
+  Record<PropertyKey, Seriall.Serializable>,
   [Prototype, Properties],
   { recursive: true }
 >({
@@ -186,11 +192,11 @@ export const prototypePreserverTransformer = new Transformer<
   },
 });
 
-type PropertyDescriptor = [any, boolean, boolean, boolean];
+type PropertyDescriptor = [Seriall.Serializable, boolean, boolean, boolean];
 type Property = [PropertyKey, ...PropertyDescriptor];
 
 export const dataDescriptorPreserverTransformer = new Transformer<
-  object,
+  Record<PropertyKey, Seriall.Serializable>,
   Property[],
   { recursive: true }
 >({

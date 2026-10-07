@@ -13,7 +13,7 @@ export const serialize = (
   transformers: Seriall.Transformer[],
 ) => {
   const graph: Seriall.Serialized.Graph = [];
-  const seen = new Map<any, number>();
+  const seen = new Map<Seriall.Serializable, number>();
 
   const addNodeToGraph = (node: Seriall.Serializable): number => {
     let id = seen.get(node);
@@ -51,8 +51,8 @@ export const serialize = (
     }
 
     if (Array.isArray(node)) {
-      graph.push([]);
-      const arr = graph[id] as number[];
+      const arr: Seriall.Serialized.NodeId[] = [];
+      graph.push(arr);
       for (const element of node) {
         const elementId = addNodeToGraph(element);
         arr.push(elementId);
@@ -61,10 +61,10 @@ export const serialize = (
     }
 
     if (typeof node === "object") {
-      graph.push({});
-      const obj = graph[id] as Object;
+      const obj: Record<PropertyKey, Seriall.Serialized.NodeId> = {};
+      graph.push(obj);
       for (const key in node) {
-        const elementId = addNodeToGraph(node[key]);
+        const elementId = addNodeToGraph(node[key as keyof typeof node]);
         obj[key] = elementId;
       }
       return id;

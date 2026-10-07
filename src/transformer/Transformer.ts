@@ -1,16 +1,25 @@
 import { PRIORITY } from "../const";
-import type { Seriall } from "../types";
+import type { DeepOptional, Seriall } from "../types";
+
+type TransformerParams<
+  Decoded extends Seriall.Transformer.Decoded,
+  Encoded extends Seriall.Transformer.Encoded,
+  Options extends Seriall.Transformer.Options,
+> = Omit<Seriall.Transformer<Decoded, Encoded, Options>, "recursive"> &
+  (Options["recursive"] extends true
+    ? { recursive: true }
+    : { recursive?: false });
 
 export class Transformer<
-  Decoded extends Seriall.Serializable,
-  Encoded extends Seriall.Transformer.Encoded<Options["recursive"]>,
-  Options extends { recursive: boolean } = { recursive: false },
-> implements Seriall.Transformer<Options["recursive"], Decoded, Encoded> {
+  Decoded extends Seriall.Transformer.Decoded,
+  Encoded extends Seriall.Transformer.Encoded,
+  Options extends Seriall.Transformer.Options = { recursive: false },
+> implements Seriall.Transformer<Decoded, Encoded, Options> {
   id: Seriall.Transformer.Id;
-  recursive?: Options["recursive"] | undefined;
-  match: Seriall.Transformer.Matcher<Seriall.Serializable>;
-  encode: Seriall.Transformer.Encoder<Decoded, Encoded, Options["recursive"]>;
-  decode: Seriall.Transformer.Decoder<Encoded, Decoded, Options["recursive"]>;
+  recursive: Options["recursive"];
+  match: Seriall.Transformer.Matcher;
+  encode: Seriall.Transformer.Encoder<Decoded, Encoded>;
+  decode: Seriall.Transformer.Decoder<Encoded, Decoded, Options>;
   priority: number;
 
   static PRIORITY = PRIORITY;
@@ -22,12 +31,12 @@ export class Transformer<
     decode,
     priority,
     recursive,
-  }: Seriall.Transformer<Options["recursive"], Decoded, Encoded>) {
+  }: TransformerParams<Decoded, Encoded, Options>) {
     this.id = id;
-    this.recursive = recursive;
+    this.priority = priority || PRIORITY.CUSTOM_CLASS;
+    this.recursive = recursive || false;
     this.match = match;
     this.encode = encode;
     this.decode = decode;
-    this.priority = priority || PRIORITY.CUSTOM_CLASS;
   }
 }

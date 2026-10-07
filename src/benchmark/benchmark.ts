@@ -8,7 +8,7 @@ import { stringify as flattedStringify, parse as flattedParse } from "flatted";
 import * as devalue from "devalue";
 import superjson from "superjson";
 
-import { SerializableClass, Serializer, Transformer } from "../index";
+import { Serializer, Transformer } from "../index";
 
 // =============================================================================
 // Configuration
@@ -61,8 +61,8 @@ const seriall = new Serializer();
 const { serialize: seriallSerialize, deserialize: seriallDeserialize } =
   seriall;
 
-class User extends SerializableClass {
-  address: object;
+class User {
+  address: object | undefined;
   root: User | undefined;
   self: User | undefined;
   friends: User[] = [];
@@ -72,9 +72,7 @@ class User extends SerializableClass {
     public name: string,
     public createdAt: Date,
     public metadata: Map<string, unknown>,
-  ) {
-    super();
-  }
+  ) {}
 }
 
 // seriall.registerClass("U", User);

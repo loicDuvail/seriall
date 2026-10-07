@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
-    "strictNullChecks": true,
-    "exactOptionalPropertyTypes": true,
+    "strict": true,
     "lib": ["ESNext"],
     "target": "esnext",
     "moduleResolution": "bundler",
@@ -12,5 +11,5 @@
     "types": ["node"]
   },
   "include": ["../src/**/*.ts"],
-  "exclude": ["../src/test/**/*"]
+  "exclude": ["../src/test/**/*", "../src/benchmark/**/*"]
 }

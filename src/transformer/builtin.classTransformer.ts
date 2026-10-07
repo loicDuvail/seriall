@@ -1,83 +1,129 @@
-import type { Seriall } from "../types";
+import type { AnyClass, Seriall } from "../types";
 import { Transformer } from "./Transformer";
 
 const ENCODE = Symbol("encode");
 const DECODE = Symbol("decode");
 const KEYS = Symbol("keys");
 
-export const SYMBOLS = { ENCODE, DECODE };
+export const SYMBOLS = { ENCODE, DECODE, KEYS };
 
-export abstract class SerializableClass {
-  constructor(..._: any) {}
+type OptimizedClass = AnyClass & { [KEYS]: PropertyKey[] };
 
-  [ENCODE]() {
-    const encoded: object = {};
-    for (const key of Object.keys(this)) {
-      const value = this[key];
-      if (typeof value !== "function") {
-        encoded[key] = value;
-      }
+type CustomEncoderClass = AnyClass & {
+  prototype: {
+    [ENCODE]: () => any[];
+  };
+};
+
+type CustomDecoderClass = AnyClass & {
+  [DECODE]: Seriall.Transformer.Decoder<
+    any[],
+    InstanceType<CustomDecoderClass>,
+    { recursive: true }
+  >;
+};
+
+const classEncoder = <T extends object>(node: T) => {
+  const encoded: Record<PropertyKey, unknown> = {};
+
+  for (const key of Object.keys(node)) {
+    const value = node[key as keyof typeof node];
+    if (typeof value !== "function") {
+      encoded[key] = value;
     }
-    return [encoded] as any[];
   }
 
-  static [DECODE] = function <T extends typeof SerializableClass>(
-    this: T,
-    registerNode: Parameters<
-      Seriall.Transformer.Decoder<any[], InstanceType<T>, true>
-    >[0],
-  ) {
-    let revivedInstance: InstanceType<T> = Object.create(this.prototype);
+  return [encoded] as unknown[];
+};
+
+const classDecoder =
+  <T extends AnyClass>(
+    clazz: T,
+  ): Seriall.Transformer.Decoder<any[], InstanceType<T>, { recursive: true }> =>
+  (registerNode) => {
+    const revivedInstance: InstanceType<T> = Object.create(clazz.prototype);
+
     const [args] = registerNode(revivedInstance);
     Object.assign(revivedInstance, args);
+
     return revivedInstance;
   };
-}
 
-/**
- * Provides better performance than SerializableClass, but at the cost of having to
- * manually specify the instance keys to encode
- */
-export abstract class OptimizedSerializableClass extends SerializableClass {
-  constructor(_: any) {
-    super();
-  }
+const optimizedClassEncoder =
+  <T extends OptimizedClass>(clazz: T) =>
+  (node: InstanceType<T>) => {
+    const encoded: unknown[] = [];
 
-  static [KEYS]: string[];
-
-  [ENCODE]() {
-    const encoded: any[] = [];
-    for (const key of Object.keys(this)) {
-      const value = this[key];
+    for (const key of clazz[KEYS]) {
+      const value = node[key as keyof typeof node];
       if (typeof value !== "function") {
         encoded.push(value);
       }
     }
-    return encoded;
-  }
 
-  static [DECODE] = function <T extends typeof SerializableClass>(
-    this: T,
+    return encoded;
+  };
+
+export const optimizedClassDecoder =
+  <T extends AnyClass & { [KEYS]: PropertyKey[] }>(clazz: T) =>
+  (
     registerNode: Parameters<
-      Seriall.Transformer.Decoder<string[], InstanceType<T>, true>
+      Seriall.Transformer.Decoder<any[], InstanceType<T>, { recursive: true }>
     >[0],
-  ) {
-    let revivedInstance: InstanceType<T> = Object.create(this.prototype);
+  ) => {
+    const revivedInstance: InstanceType<T> = Object.create(clazz.prototype);
     const args = registerNode(revivedInstance);
-    this[KEYS].forEach((key, index) => (revivedInstance[key] = args[index]));
+
+    clazz[KEYS].forEach(
+      (key, index) =>
+        (revivedInstance[key as keyof typeof revivedInstance] = args[index]),
+    );
+
     return revivedInstance;
   };
-}
 
-export const createClassTransformer = <T extends typeof SerializableClass>(
+export const createClassTransformer = <T extends AnyClass>(
   id: string,
   clazz: T,
-) =>
-  new Transformer<InstanceType<T>, any[], { recursive: true }>({
+) => {
+  let encode: Seriall.Transformer.Encoder<InstanceType<T>, any[]>;
+  let decode: Seriall.Transformer.Decoder<
+    any[],
+    InstanceType<T>,
+    { recursive: true }
+  >;
+
+  if (hasCustomEncoder(clazz)) {
+    encode = (node: InstanceType<CustomEncoderClass>) => node[ENCODE]();
+  }
+
+  if (hasCustomDecoder(clazz)) {
+    decode = clazz[DECODE];
+  }
+
+  if (isOptimizedClass(clazz)) {
+    encode ||= optimizedClassEncoder(clazz);
+    decode ||= optimizedClassDecoder(clazz);
+  }
+
+  encode ||= classEncoder;
+  decode ||= classDecoder(clazz);
+
+  return new Transformer<InstanceType<T>, any[], { recursive: true }>({
     id,
     priority: Transformer.PRIORITY.CUSTOM_CLASS,
     recursive: true,
     match: (node) => node instanceof clazz,
-    encode: (node) => node[ENCODE](),
-    decode: (registerNode) => clazz[DECODE](registerNode),
+    encode,
+    decode,
   });
+};
+
+const isOptimizedClass = (clazz: AnyClass): clazz is OptimizedClass =>
+  Object.hasOwn(clazz, KEYS);
+
+const hasCustomEncoder = (clazz: AnyClass): clazz is CustomEncoderClass =>
+  Object.hasOwn(clazz.prototype, ENCODE);
+
+const hasCustomDecoder = (clazz: AnyClass): clazz is CustomDecoderClass =>
+  Object.hasOwn(clazz, DECODE);
