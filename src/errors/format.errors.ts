@@ -13,6 +13,7 @@ export class FormatError extends Error {
         break;
       case "json":
         this.message = `Data is malformed JSON: "${new String(value).substring(30)}..."`;
+        break;
       case "library":
         this.message = `Can't deserialize data, invalid lib metadata. Expected "${LIB}", got "${value}"`;
         break;
