@@ -7,3 +7,4 @@ import "./classes.custom.test";
 import "./symbols.test";
 import "./complex.test";
 import "./protocol.test";
+import "./malicious.test";

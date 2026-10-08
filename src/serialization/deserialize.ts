@@ -55,13 +55,13 @@ export const deserialize = (
       throw new LimitError({ limits, type: "depth" });
     }
 
+    if (!Number.isInteger(index) || graph.length <= index || index < 0) {
+      throw new FormatError({ type: "reference", value: index });
+    }
+
     if (index in revived) {
       depth--;
       return revived[index];
-    }
-
-    if (graph.length <= index || index < 0) {
-      throw new FormatError({ type: "reference", value: index });
     }
 
     const node = graph[index];
