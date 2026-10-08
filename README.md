@@ -15,6 +15,34 @@ Unlike serializers that turn an object into a tree, seriall serializes the **obj
 
 seriall does not serialize or execute JavaScript functions or classes.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Supported values](#supported-values)
+  - [JSON values](#json-values)
+  - [Built-in classes](#built-in-classes)
+  - [References and circular structures](#references-and-circular-structures)
+- [Custom classes](#custom-classes)
+  - [Custom class encoding](#custom-class-encoding)
+- [Transformers](#transformers)
+  - [Example: `URL`](#example-url)
+  - [Transformer priority](#transformer-priority)
+- [Optional features](#optional-features)
+  - [Symbol-keyed properties](#symbol-keyed-properties)
+  - [Prototype preservation](#prototype-preservation)
+  - [Property descriptor preservation](#property-descriptor-preservation)
+- [Serializer options](#serializer-options)
+  - [Built-in transformers](#built-in-transformers)
+  - [Built-in native classes](#built-in-native-classes)
+  - [Class registration through options](#class-registration-through-options)
+  - [Limits](#limits)
+- [Serializer API](#serializer-api)
+- [Security](#security)
+- [Serialization format](#serialization-format)
+- [Why seriall?](#why-seriall)
+- [License](#license)
+
 ## Installation
 
 npm install seriall
