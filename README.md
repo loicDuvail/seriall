@@ -1,363 +1,321 @@
 # seriall
 
-## TL;DR
+**seriall** is a data-only serializer for JavaScript object graphs.
 
-**seriall is a data-only serialization protocol for JavaScript object graphs, preserving reference identity, circular structures, built-in types, and registered custom classes.**
+It serializes complex JavaScript data while preserving:
 
-**The only JavaScript values not supported out-of-the-box are:**
+- shared references
+- circular references
+- built-in JavaScript types
+- registered custom classes
+- symbol and bigint values
+- configurable serialization behavior through transformers
 
-- ⚠️ Custom classes instances with **JavaScript private fields** (`#field`),
+Unlike serializers that turn an object into a tree, seriall serializes the **object graph**. This means that two references to the same object remain references to the same object after deserialization.
 
-  there are still configurable workarounds, just no out-of-the-box solution
-
-  typescript `private` visibility is generally supported ✅
-
-- 🚫 Any **function / whole class**, for security reasons (e.g: `serialize(MyClass)` or `serialize(myFunction)`)
-
-  even though even this is theoretically configurable
-
-seriall **does not use `eval` or dynamically execute serialized JavaScript code**. Serialized functions and classes are not supported by default, which helps keep deserialization data-only.
-
-It **conserves refenrential integrity**, so circularly referenced arrays/objects, and cross referenced arrays/objects can be serialized
-
-It **can out-of-the-box register custom classes**, and recreates their instances at deserialization time
-
-It is **highly configurable**, through the usage of `transformers`
-
-## Table of Contents
-
-- [TL;DR](#tldr)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Basic usage](#basic-usage)
-  - [Registering custom classes](#registering-custom-classes)
-- [Supported](#supported)
-- [Advanced Usages](#advanced-usages)
-  - [Symbols](#symbols)
-  - [Transformers](#transformers)
-  - [Custom Class Serialization](#custom-class-serialization)
-  - [Prototype Preservation](#prototype-preservation)
-  - [Data Descriptor Preservation](#data-descriptor-preservation)
-- [Benchmark](#benchmark)
-- [Import Notes](#import-notes)
-  - [JavaScript](#javascript)
-  - [Typescript](#typescript)
-- [Protocol Versioning](#protocol-versioning)
-  - [Motive](#motive)
-  - [Solution](#solution)
-  - [Stable top-level structure](#stable-top-level-structure)
+seriall does not serialize or execute JavaScript functions or classes.
 
 ## Installation
 
-Inside an npm project: `npm install seriall` or `yarn install seriall`
+npm install seriall
 
-## Usage
-
-### Basic usage
+## Quick start
 
 ```ts
-// example.ts
-
 import { Serializer } from "seriall";
-
-const { serialize, deserialize } = new Serializer();
-
-// ------- create test data -------
-
-const nested = { name: "Gömböc" };
-
-const myData: any = {
-  nestedObjects: [nested, nested],
-  name: "It works!",
-};
-
-myData.self = myData;
-
-// ------- serialize data -------
-
-const str = serialize(myData);
-//    ^^^
-// {"lib":"seriall","v":1,"d":[{"nestedObjects":1,"name":4,"self":0},[2,2],{"name":3},"Gömböc","It works!"]}
-
-// -------  -------  -------
-// `str` can now go through a network for instance, and be deserialized at the other end like so:
-// -------  -------  -------
-
-const revivedData = deserialize(str);
-
-console.log(revivedData.self === revivedData);
-// true
-console.log(revivedData.nestedObjects[0] === revivedData.nestedObjects[1]);
-// true
-console.log(revivedData.nestedObjects[0]);
-// {name: "Gömböc"}
-console.log(revivedData.name);
-// It works!
-```
-
-### Registering custom classes
-
-```ts
-// example.ts
-
-import { Serializer, SerializableClass } from "seriall";
-
-// ------- create a new serializer -------
 
 const serializer = new Serializer();
 
-// ------- create and register custom classes -------
+const shared = { name: "Gömböc" };
 
-class Address extends SerializableClass {
-  country: string;
-  city: string;
-  constructor(country: string, city: string) {
-    super();
-    this.country = country;
-    this.city = city;
+const data = { first: shared, second: shared };
+
+data.self = data;
+
+const serialized = serializer.serialize(data);
+const restored = serializer.deserialize(serialized);
+
+console.log(restored.first === restored.second); // true
+
+console.log(restored.self === restored); // true
+```
+
+The serialized value is a JSON string:
+
+`{ "lib": "seriall", "v": 1, "d": [...] }`
+
+The `d` field contains the serialized object graph.
+
+---
+
+## Supported values
+
+### JSON values
+
+seriall supports the usual JSON-compatible values:
+
+- `string`
+- `number`
+- `boolean`
+- `null`
+- arrays
+- objects
+
+In addition, it preserves JavaScript values that JSON cannot represent directly:
+
+- `undefined`
+- `NaN`
+- `Infinity`
+- `-Infinity`
+- `-0`
+- `bigint`
+- `symbol`
+
+### Built-in classes
+
+The following built-in types are supported by default:
+
+- `Date`
+- `RegExp`
+- `Set`
+- `Map`
+- `String`
+- `Number`
+- `Boolean`
+
+### References and circular structures
+
+References are preserved throughout the graph:
+
+```ts
+const shared = { value: 42 };
+const data = { a: shared, b: shared };
+
+const restored = serializer.deserialize(serializer.serialize(data));
+
+console.log(restored.a === restored.b); // true
+```
+
+Circular references are also supported:
+
+```ts
+const data: any = {};
+data.self = data;
+
+const restored = serializer.deserialize(serializer.serialize(data));
+
+console.log(restored.self === restored); // true
+```
+
+---
+
+## Custom classes
+
+Custom classes can be registered directly with `registerClass()`:
+
+```ts
+import { Serializer } from "seriall";
+
+class User {
+  name: string;
+
+  constructor(name: string) {
+    this.name = name;
   }
 
-  getFullAddress() {
-    return `${this.city}, ${this.country}`;
+  greet() {
+    return `Hello, ${this.name}!`;
   }
 }
 
-serializer.registerClass("adr", Address);
+const serializer = new Serializer();
 
-class User extends SerializableClass {
+serializer.registerClass("user", User);
+
+const user = new User("Alice");
+
+const restored = serializer.deserialize(serializer.serialize(user));
+
+console.log(restored instanceof User); // true
+
+console.log(restored.greet()); // Hello, Alice!
+```
+
+The registration name becomes part of the serialized format, so the same class registration must be available when deserializing.
+
+Custom classes can also contain recursive and shared references:
+
+```ts
+class User {
   name: string;
   friends: User[] = [];
-  address: Address | undefined;
+
   constructor(name: string) {
-    super();
     this.name = name;
   }
 }
 
-serializer.registerClass("usr", User);
+const serializer = new Serializer();
 
-// ------- create test data -------
+serializer.registerClass("user", User);
 
-const mary = new User("Mary");
-const john = new User("John");
-const paris = new Address("France", "Paris");
+const alice = new User("Alice");
+const bob = new User("Bob");
 
-mary.address = paris;
-john.address = paris;
-mary.friends.push(john);
-john.friends.push(mary);
+alice.friends.push(bob);
+bob.friends.push(alice);
 
-const str = serializer.serialize(mary);
-//    ^^^
-// {"lib":"seriall","v":1,"d":[["$usr",1,2,6],"Mary",[3],["$usr",4,5,6],"John",[0],["$adr",7,8],"France","Paris"]}
+const restored = serializer.deserialize(serializer.serialize(alice));
 
-// -------  -------  -------
-// `str` can now go through a network for instance, and be deserialized at the other end like so:
-// -------  -------  -------
-
-const revived = serializer.deserialize(str);
-
-console.log(revived.name);
-// mary
-console.log(revived.address.getFullAddress());
-// Paris, France
-console.log(revived.friends[0].name);
-// john
-console.log(revived.friends[0].friends[0] === revived);
-// true
-console.log(revived.address === revived.friends[0].address);
-// true
+console.log(restored.friends[0].friends[0] === restored); // true
 ```
 
-## Supported
+### Custom class encoding
 
-As mentionned earlyer, seriall supports any graph data (objects or arrays), while preserving referential integrity
+`registerClass()` is itself implemented using seriall's transformer system.
 
-It also natively support any non-json-primitives:
-
-- `undefined`, `null`, `Infinity`, `-Infinity`, `-0`, `NaN`
-
-as well as JS-specific data-types:
-
-- `Symbols`, `BigInts`
-
-native classes instances
-
-- `Date`, `RegExp`, `Set`, `Map`
-
-and boxed primitives
-
-- `String`, `Number`, `Boolean`
-
-## Advanced Usages
-
-### Symbols
-
-By default, seriall ignores symbol keys in objects, for performance reasons.
-You can however enable this feature in the Serializer's options
+For advanced use cases, a registered class can provide custom encoding and decoding behavior through `SYMBOLS.ENCODE` and `SYMBOLS.DECODE`:
 
 ```ts
-import { Serializer } from "seriall";
+import { Serializer, SYMBOLS } from "seriall";
 
-const serializer = new Serializer({ enable: { objectSymbolIndexing: true } });
-//                                                                  ^^^^
-//                                                                  false by default
+class User {
+  name: string;
 
-const secretKey = Symbol("secret");
+  constructor(name: string) {
+    this.name = name;
+  }
 
-const data = {
-  [secretKey]: "Hello from a symbol key!",
-};
+  [SYMBOLS.ENCODE]: Seriall.Transformer.Encoder<User, [string]> = () => {
+    return [this.name];
+  };
 
-const serialized = serializer.serialize(data);
-const deserialized = serializer.deserialize(serialized);
+  static [SYMBOLS.DECODE]: Seriall.Transformer.Decoder<
+    [string],
+    User,
+    { recursive: true }
+  > = (registerNode) => {
+    const user = Object.create(this.prototype);
+    const [name] = registerNode(user);
+    user.name = name;
+    return user;
+  };
+}
 
-const restoredKey = Object.getOwnPropertySymbols(deserialized)[0];
+const serializer = new Serializer();
 
-console.log(deserialized[restoredKey]);
-// "Hello from a symbol key!"
-
-console.log(restoredKey.description);
-// "secret"
+serializer.registerClass("user", User);
 ```
 
-Symbol identity is also preserved across references:
+`SYMBOLS.ENCODE` receives the instance and returns the values that should be serialized.
 
-```ts
-const key = Symbol("key");
+`SYMBOLS.DECODE` receives a `registerNode` function. For recursive values, the decoder should register the object before recursively decoding its contents. This allows circular and mutually recursive class instances to be restored correctly.
 
-const data = {
-  [key]: "value",
-  key,
-};
+## Transformers
 
-const restored = serializer.deserialize(serializer.serialize(data));
+Transformers are the core extension mechanism of seriall.
 
-const restoredKey = Object.getOwnPropertySymbols(restored)[0];
+A transformer defines:
 
-console.log(restored[restoredKey]);
-// "value"
+- `id` — the identifier stored in the serialized graph
+- `match` — determines whether the transformer handles a value
+- `encode` — converts the value into serializable graph data
+- `decode` — reconstructs the value
+- `priority` — controls which transformer is selected
+- `recursive` — enables recursive/circular decoding
 
-console.log(restored.key === restoredKey);
-// true
-```
-
-This works because seriall preserves the object graph, rather than simply converting values to JSON.
-
-### Transformers
-
-seriall's serialization logic is built around **transformers**.
-
-A transformer tells seriall how to:
-
-- identify a specific type of value
-- encode it into serializable data (always an array for performance reasons)
-- decode that data back into the original type
-
-This makes seriall highly configurable and allows it to support types that are not supported out-of-the-box.
-
-A transformer can be registered using `registerTransformer()`:
+### Example: `URL`
 
 ```ts
 import { Serializer, Transformer } from "seriall";
 
 const serializer = new Serializer();
 
-const transformer = new Transformer({
-  id: "url",
-  priority: Transformer.PRIORITY.CUSTOM_CLASS,
-  match: (value) => value instanceof URL,
-  encode: (value) => [value.toString()],
-  decode: ([value]) => new URL(value),
-});
+serializer.registerTransformer(
+  new Transformer({
+    id: "url",
+    match: (value) => value instanceof URL,
+    encode: (value) => [value.toString()],
+    decode: ([value]) => new URL(value),
+  }),
+);
 
-serializer.registerTransformer(transformer);
+const data = { website: new URL("https://example.com") };
 
-const original = {
-  website: new URL("https://example.com"),
-};
+const restored = serializer.deserialize(serializer.serialize(data));
 
-const serialized = serializer.serialize(original);
-const restored = serializer.deserialize(serialized);
-
-console.log(restored.website instanceof URL);
-// true
-
-console.log(restored.website.href);
-// "https://example.com/"
+console.log(restored.website instanceof URL); // true
 ```
 
-### Custom Class Serialization
+### Transformer priority
 
-The `registerClass()` mechanism introduced earlier is actually built on top of seriall's transformer system.
+Transformers are evaluated by priority, with lower values taking precedence.
 
-In other words, **a registered class is ultimately just a transformer**.
+Built-in priorities are available through:
 
-This means that the class serialization mechanism can be reproduced and customized using `Transformer` directly when more control is needed.
+`Transformer.PRIORITY.CUSTOM_CLASS` `Transformer.PRIORITY.NATIVE_CLASS` `Transformer.PRIORITY.PRIMITIVE`
 
-By default, `SerializableClass` provides the necessary encoding and decoding behavior.
+A custom priority can be created with:
 
-Under the hood, it looks something like:
+`Transformer.PRIORITY.custom(priority)`
+
+When transformers have the same priority, registration order determines which transformer is selected first.
+
+---
+
+## Optional features
+
+Several features are disabled by default because they increase the amount of data serialized or change the default object representation.
+
+### Symbol-keyed properties
+
+By default, symbol properties are ignored when serializing ordinary objects.
+
+Enable them with:
 
 ```ts
-import { SYMBOLS } from "seriall";
+const serializer = new Serializer({ enable: { objectSymbolIndexing: true } });
 
-export abstract class SerializableClass {
-  [ENCODE]() {...};
-  static [DECODE] = function (this, registerNode) {...};
-};
+const key = Symbol("secret");
+
+const data = { [key]: "value" };
+
+const restored = serializer.deserialize(serializer.serialize(data));
+
+const restoredKey = Object.getOwnPropertySymbols(restored)[0];
+
+console.log(restored[restoredKey]); // value
 ```
 
-So you can actually overwrite a class encoding/decoding methods like this:
+Symbol identity is preserved as part of the object graph.
+
+---
+
+### Prototype preservation
+
+By default, ordinary objects are deserialized as data containers rather than with their original prototype.
+
+Enable prototype preservation with:
 
 ```ts
-import { SerializableClass, SYMBOLS } from "seriall";
-
-class MyClass extends SerializableClass {
-  [SYMBOLS.ENCODE]() {
-    console.log("Calling a custom encoding function");
-    return super[SYMBOLS.ENCODE]();
-  }
-  static [SYMBOLS.DECODE] = function (this, registerNode) {
-    console.log("Calling a custom decoding function");
-    return super[SYMBOLS.DECODE](registerNode);
-  };
-}
+const serializer = new Serializer({ enable: { preservePrototype: true } });
 ```
 
-### Prototype Preservation
+This preserves prototype relationships and their references.
 
-By default, Seriall serializes objects as data containers without preserving their prototype chains. This keeps the serialized representation simple and makes deserialized objects safe to use as data containers.
+It is disabled by default because most serialized data does not need its prototype chain.
 
-If you need to preserve the prototype structure of your objects, you can enable prototype preservation:
+---
 
-```ts
-const serializer = new Serializer({
-  enable: {
-    preservePrototype: true,
-  },
-});
-```
+### Property descriptor preservation
 
-When enabled, Seriall represents an object's prototype as another node in the serialization graph. This means prototype relationships are preserved by reference, just like any other object relationship.
+By default, object properties are restored as regular writable, enumerable and configurable properties.
 
-Prototype preservation also maintains **referential integrity**. If multiple objects share the same prototype, they will continue to share the same revived prototype after deserialization. Cyclic references are also supported by the graph-based serializer.
-
-The object's own string and symbol properties are serialized. Property descriptors are not currently preserved; serialized properties are restored as normal writable, enumerable, and configurable properties.
-
-> **Note:** Prototype preservation is intended for cases where an object's prototype is meaningful to the data being serialized. If objects are primarily being used as dictionaries, leaving this option disabled is generally preferable.
-
-### Data Descriptor Preservation
-
-By default, seriall serializes an object's property values without preserving their property descriptors. This means properties are recreated as regular writable, enumerable, and configurable properties.
-
-If you need to preserve **data property descriptors**, enable `preserveDataDescriptors`:
+Data property descriptors can be preserved with:
 
 ```ts
 const serializer = new Serializer({
-  enable: {
-    preserveDataDescriptors: true,
-  },
+  enable: { preserveDataDescriptors: true },
 });
 ```
 
@@ -373,187 +331,206 @@ Object.defineProperty(object, "value", {
   configurable: false,
 });
 
-const revived = serializer.deserialize(serializer.serialize(object));
+const restored = serializer.deserialize(serializer.serialize(object));
 
-Object.getOwnPropertyDescriptor(revived, "value");
-// {
-//   value: 42,
-//   enumerable: false,
-//   writable: false,
-//   configurable: false
-// }
+console.log(Object.getOwnPropertyDescriptor(restored, "value"));
 ```
 
-Property keys are serialized as graph values, so symbol keys are also supported when this mode is enabled:
+The following descriptor fields are preserved:
+
+- `value`
+- `writable`
+- `enumerable`
+- `configurable`
+
+Accessor descriptors (`get` / `set`) are not preserved.
+
+---
+
+## Serializer options
+
+the default configuration is:
 
 ```ts
-const key = Symbol("key");
-
-const object = {
-  [key]: 42,
-};
-
-const revived = serializer.deserialize(serializer.serialize(object));
-
-const revivedKey = Object.getOwnPropertySymbols(revived)[0];
-
-revived[revivedKey];
-// 42
+new Serializer({
+  enable: {
+    builtinPrimitiveTransformers: true,
+    builtinNativeClasses: true,
+    objectSymbolIndexing: false,
+    preservePrototype: false,
+    preserveDataDescriptors: false,
+  },
+  classes: {},
+  limits: { maxDepth: 1_000, maxNodes: 15_000, maxPayloadSize: 200_000 },
+});
 ```
 
-Because symbols are represented as graph nodes, multiple references to the same symbol retain their referential identity after deserialization.
+All options are optional.
 
-preserveDataDescriptors currently preserves data descriptors (value, writable, enumerable, and configurable). Accessor descriptors (get / set) are not preserved by this transformer.
+### Built-in transformers
 
-This option is disabled by default.
+builtinPrimitiveTransformers: true
 
-## Benchmark
+Enables support for:
 
-seriall is designed for **general-purpose JavaScript object graphs**, including circular references, shared references, built-in types, and recursive custom class instances.
+- symbols
+- special numbers
+- `undefined`
+- `bigint`
 
-Benchmarks were run with **5,000 iterations**, **500 warmup iterations**, and **7 rounds** with randomized benchmark order. Results below use the median of the rounds.
+### Built-in native classes
 
-### Common JavaScript graph
+builtinNativeClasses: true
 
-This benchmark contains circular references and many shared object references.
+Enables support for:
 
-| Operation       |          seriall |     V8 | devalue | flatted | superjson |
-| --------------- | ---------------: | -----: | ------: | ------: | --------: |
-| Serialization   | **16,887 ops/s** | 34,903 |   9,674 |   7,086 |     2,727 |
-| Deserialization | **16,077 ops/s** | 18,274 |  16,459 |   3,298 |     6,200 |
-| Round-trip      |  **8,279 ops/s** | 11,727 |   5,974 |   2,218 |     1,875 |
+- `Date`
+- `Set`
+- `Map`
+- `RegExp`
+- boxed `String`
+- boxed `Number`
+- boxed `Boolean`
 
-seriall 's serialized size was **6,057 bytes**, compared with 6,029 bytes for devalue, 6,445 bytes for flatted, 15,233 bytes for superjson, and 4,458 bytes for V8.
+### Class registration through options
 
-For this graph, seriall 's complete round-trip was approximately **1.4× faster than devalue** and **3.7× faster than flatted**.
+Classes can also be registered when creating the serializer:
 
-### Rich JavaScript graph
+```ts
+const serializer = new Serializer({
+  classes: { user: User, address: Address },
+});
+```
 
-The rich graph includes:
+This is equivalent to calling:
 
-- `Date`, `Map`, `Set`, and `BigInt`
-- shared references
+```ts
+serializer.registerClass("user", User);
+serializer.registerClass("address", Address);
+```
+
+### Limits
+
+Deserialization is protected by configurable limits:
+
+```ts
+limits: { maxDepth: 1_000, maxNodes: 15_000, maxPayloadSize: 200_000, }
+```
+
+These limit:
+
+- maximum recursive depth
+- maximum number of graph nodes
+- maximum serialized payload size
+
+---
+
+## Serializer API
+
+### `serialize(data)`
+
+Serializes a JavaScript value into a JSON string.
+
+```ts
+const serialized = serializer.serialize(data);
+```
+
+### `deserialize(data)`
+
+Deserializes a string produced by `serialize()`.
+
+```ts
+const data = serializer.deserialize(serialized);
+```
+
+### `registerTransformer(transformer)`
+
+Registers a custom transformer.
+
+```ts
+serializer.registerTransformer(transformer);
+```
+
+Transformer IDs must be unique within a serializer.
+
+### `deregisterTransformer(transformer)`
+
+Removes a transformer by transformer instance or ID:
+
+```ts
+serializer.deregisterTransformer("url");
+```
+
+### `registerClass(name, class)`
+
+Registers a custom class:
+
+```ts
+serializer.registerClass("user", User);
+```
+
+Internally, this creates a transformer for the class.
+
+### `deregisterClass(name)`
+
+Removes a registered class:
+
+```ts
+serializer.deregisterClass("user");
+```
+
+---
+
+## Security
+
+seriall is designed around a **data-only** serialization model.
+
+It does not serialize or execute:
+
+- functions
+- class definitions
+- arbitrary JavaScript code
+
+Deserialization therefore does not require `eval()` or dynamically generated JavaScript.
+
+However, deserializing untrusted input should still be treated as processing untrusted data. Use appropriate deserialization limits and only register transformers and classes that you trust.
+
+---
+
+## Serialization format
+
+Every serialized value is a JSON string with this top-level structure:
+
+{ lib: "seriall", v: 1, d: [...] }
+
+- `lib` identifies the seriall format.
+- `v` identifies the protocol version.
+- `d` contains the serialized object graph.
+
+The protocol version allows incompatible future protocol changes to be detected instead of silently deserializing data incorrectly.
+
+A serializer will reject payloads with an incompatible `lib` or `v`.
+
+---
+
+## Why seriall?
+
+seriall is useful when you need to transfer or persist **complex JavaScript object graphs**, rather than simple JSON data.
+
+It is particularly suited to data containing:
+
 - circular references
-- recursive custom `User` instances
-- users referencing themselves and each other
-- custom classes nested at multiple levels
+- shared references
+- `Map` / `Set`
+- `Date` / `RegExp`
+- `BigInt` / `Symbol`
+- recursive custom classes
+- application-specific types through transformers
 
-| Operation       |         seriall | devalue |
-| --------------- | --------------: | ------: |
-| Serialization   | **2,589 ops/s** |   2,502 |
-| Deserialization | **3,505 ops/s** |   4,157 |
-| Round-trip      | **1,467 ops/s** |   1,519 |
+This makes seriall a good fit for applications with JavaScript on both the client and server, where complex application data needs to cross a network boundary while retaining its structure and references.
 
-seriall serialized this graph to **16,517 bytes**.
+If you only need to serialize simple JSON data, regular `JSON.stringify()` / `JSON.parse()` is usually the simpler choice.
 
-The most important difference in this benchmark is correctness: seriall preserves recursive custom-class identity, including self-references and cross-references between class instances.
+## License
 
-```text
-seriall:
-  Self referencing user: PASS
-  Cross referencing users: PASS
-
-devalue:
-  Self referencing user: FAIL
-  Cross referencing users: FAIL
-```
-
-### Plots
-
-![Common JavaScript Graph](./assets/benchmark-common.svg)
-
-![Rich JavaScript Graph](./assets/benchmark-rich.svg)
-
-### Conclusion
-
-In these benchmarks, seriall was the fastest of the tested non-Node.js-only serializers on the common graph, while remaining competitive with devalue on the richer graph.
-
-More importantly, Seriall combines this performance with full referential integrity for recursive custom class instances, configurable transformers, built-in type support, and a data-only serialization format.
-
-That makes Seriall particularly well suited for transferring complex JavaScript object graphs, such as those encountered in network-layer protocols.
-
-## Import Notes
-
-seriall is exported in both cjs and mjs.
-
-It therefore supports both CommonJS import (`require`) and ES Module import (`import`)
-
-It also exposes both `.d.cts` and `.d.mts` declaration files, and provides therefore type-safety in both environment.
-
-### JavaScript
-
-**ES Module**
-
-```ts
-// demo.mjs
-import { Serializer } from "seriall";
-```
-
-**CommonJS**
-
-```ts
-// demo.cjs
-const { Serializer } = require("seriall");
-```
-
-### Typescript
-
-**ES Module**
-
-```ts
-// demo.mts
-import { Serializer } from "seriall";
-// Serializer is properly typed
-```
-
-**CommonJS**
-
-either
-
-```ts
-// demo.cts
-import seriall = require("seriall");
-const { Serializer } = seriall;
-// Serializer is now typed properly
-```
-
-or
-
-```ts
-// demo.cts
-const { Serializer } = require("seriall") as typeof import("seriall");
-// Serializer is now typed properly
-```
-
-## Protocol Versioning
-
-### Motive
-
-In the advent of a **breaking protocol change**, serializers running on different platforms (e.g client vs server) could
-go temporarily out of sync regarding their serialization protocol.
-
-### Solution
-
-To handle this case and prevent incompatible data from being deserialized incorrectly, **seriall checks the protocol version before deserializing data** .
-
-⚠️ A protocol mismatch will result in a error being thrown
-
-The protocol is however **not expected to change**, and especially not frequently.
-
-### Stable top level structure:
-
-every serialized data consist of a json string, structured like this:
-
-```ts
-{
-  "lib": "seriall", // stable
-  "v": number, // protocol version
-  "d": any // serialized data
-}
-```
-
-- `lib` identifies the serialization format and is expected to remain stable.
-
-- `v` identifies the protocol version and may change if a breaking protocol change is introduced.
-
-- `d` contains the serialized object graph and may change format between protocol versions.
+See [LICENSE](./LICENSE).
