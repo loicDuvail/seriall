@@ -14,20 +14,24 @@ export const serialize = (
 ) => {
   const graph: Seriall.Serialized.Graph = [];
   const seen = new Map<Seriall.Serializable, number>();
+  let minusZeroId: number | undefined;
 
   const addNodeToGraph = (node: Seriall.Serializable): number => {
-    let id = seen.get(node);
+    let id = Object.is(node, -0) ? minusZeroId : seen.get(node);
 
-    // ignore id if node is -0, because seen.get(-0) is same as seen.get(0), which thus loses its identity
-    if (id !== undefined && !Object.is(node, -0)) {
+    if (id !== undefined) {
       return id;
     }
 
     id = graph.length;
-    seen.set(node, id);
+
+    if (Object.is(node, -0)) {
+      minusZeroId = id;
+    } else {
+      seen.set(node, id);
+    }
 
     if (isJsonPrimitive(node)) {
-      const id = graph.length;
       graph.push(node);
       return id;
     }
