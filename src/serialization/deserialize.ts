@@ -7,44 +7,67 @@ import {
   SIGNATURE_INDEX,
   DATA_INDEX,
 } from "@const";
+import { FormatError, LimitError } from "@errors";
 
 export const deserialize = (
   data: string,
   transformers: Record<Seriall.Transformer.Id, Seriall.Transformer>,
+  limits: Seriall.Options["limits"],
 ) => {
-  const { lib, v, d } = JSON.parse(data);
+  if (data.length > limits.maxPayloadSize) {
+    throw new LimitError({ type: "payload", limits, current: data.length });
+  }
+
+  let payload: Record<string, unknown>;
+
+  try {
+    payload = JSON.parse(data);
+  } catch {
+    throw new FormatError({ type: "json", value: data });
+  }
+
+  const { lib, v, d } = payload;
 
   if (lib !== LIB) {
-    throw new Error(
-      `Can't deserialize data, invalid lib metadata. Expected "${LIB}", got "${lib}"`,
-    );
+    throw new FormatError({ type: "library", value: lib });
   }
-
   if (v !== PROTOCOL_VERSION) {
-    throw new Error(
-      `Can't deserialize data, invalid protocol version. Expected ${PROTOCOL_VERSION}, got ${v}`,
-    );
+    throw new FormatError({ type: "version", value: v });
   }
-
   if (!Array.isArray(d)) {
-    throw new Error("Invalid seriall payload: 'd' must be an array");
+    throw new FormatError({ type: "payload", value: d });
   }
 
   const graph: Seriall.Serialized.Graph = d;
+
+  if (graph.length > limits.maxNodes) {
+    throw new LimitError({ limits, current: graph.length, type: "nodes" });
+  }
+
   const revived: Seriall.Serializable[] = [];
 
+  let depth = 0;
+
   const reviveNode = (index: number) => {
+    depth++;
+
+    if (depth > limits.maxDepth) {
+      throw new LimitError({ limits, type: "depth" });
+    }
+
     if (index in revived) {
+      depth--;
       return revived[index];
     }
 
     if (graph.length <= index || index < 0) {
-      throw new Error(`Invalid serialized graph reference: ${index}`);
+      throw new FormatError({ type: "reference", value: index });
     }
 
     const node = graph[index];
 
     if (isJsonPrimitive(node)) {
+      depth--;
       return node;
     }
 
@@ -55,6 +78,7 @@ export const deserialize = (
       for (const key of Object.keys(node)) {
         obj[key] = reviveNode(node[key]);
       }
+      depth--;
       return obj;
     }
 
@@ -67,6 +91,7 @@ export const deserialize = (
       for (const element of typedNode) {
         arr.push(reviveNode(element));
       }
+      depth--;
       return arr;
     }
 
@@ -100,6 +125,7 @@ export const deserialize = (
     if (!transformer.recursive && typedNode[DATA_INDEX] === undefined) {
       const decoded = nonRecursiveTransformer.decode(NO_TRANSFORM_DATA);
       revived[index] = decoded;
+      depth--;
       return decoded;
     }
 
@@ -110,6 +136,7 @@ export const deserialize = (
       }
       const decoded = nonRecursiveTransformer.decode(revivedValues);
       revived[index] = decoded;
+      depth--;
       return decoded;
     }
 
@@ -129,6 +156,7 @@ export const deserialize = (
       return revivedValues;
     };
 
+    depth--;
     return recursiveTransformer.decode(registerNode);
   };
 

@@ -19,6 +19,11 @@ const defaultOptions: Seriall.Options = {
     preserveDataDescriptors: false,
   },
   classes: {},
+  limits: {
+    maxDepth: 1_000,
+    maxNodes: 15_000,
+    maxPayloadSize: 200_000,
+  },
 };
 
 export class Serializer {
@@ -27,9 +32,12 @@ export class Serializer {
     Seriall.Transformer.Id,
     Seriall.Transformer
   > = {};
+  private limits: Seriall.Options["limits"];
 
   constructor(options: DeepOptional<Seriall.Options> = {}) {
     const opt = deepMerge<Seriall.Options>(defaultOptions, options);
+
+    this.limits = opt.limits;
 
     // transformer registration ordering is intentional
     // only change this code mindfully
@@ -52,7 +60,8 @@ export class Serializer {
   serialize = (data: Seriall.Serializable) =>
     serialize(data, this.transformers);
 
-  deserialize = (data: string) => deserialize(data, this.transformersRecord);
+  deserialize = (data: string) =>
+    deserialize(data, this.transformersRecord, this.limits);
 
   registerTransformer = (transformer: Seriall.AnyTransformer) => {
     if (transformer.id in this.transformersRecord) {

@@ -103,5 +103,10 @@ export namespace Seriall {
       preserveDataDescriptors: boolean;
     };
     classes: Record<Seriall.Transformer.Id, AnyClass>;
+    limits: {
+      maxNodes: number;
+      maxDepth: number;
+      maxPayloadSize: number;
+    };
   };
 }

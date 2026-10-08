@@ -17,7 +17,9 @@
       "@const": ["../src/const"],
       "@const/*": ["../src/const/*"],
       "@utils": ["../src/utils"],
-      "@utils/*": ["../src/utils/*"]
+      "@utils/*": ["../src/utils/*"],
+      "@errors": ["../src/errors"],
+      "@errors/*": ["../src/errors/*"]
     }
   },
   "include": ["../src/**/*.ts"]
