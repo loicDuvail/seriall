@@ -198,6 +198,28 @@ const restored = serializer.deserialize(serializer.serialize(alice));
 console.log(restored.friends[0].friends[0] === restored); // true
 ```
 
+### Custom class optimization
+
+**By default**, a custom class instance is encoded by the defaultClassEncoder, in an object format: `{"name":"Alice", "friends":[{...}]}`, however, you can also enable a faster and more compact class encoding/decoding mechanism by specifying a class's keys statically
+
+```ts
+import { SYMBOLS } from "seriall";
+class User {
+  static [SYMBOLS.KEYS] = ["name", "friends"];
+
+  name: string;
+  friends: User[] = [];
+
+  constructor(name: string) {
+    this.name = name;
+  }
+}
+```
+
+This changes the encoding/decoding mechanism to an array oriented one. A user will thus be encoded in the following format: `["Alice", [{...}]]`. This avoids needing to encode every key of every class instance, which has a big impact on serialization speed and size.
+
+⚠️ Note that only specified keys will be encoded, so if this feature must be used carefully.
+
 ### Custom class encoding
 
 `registerClass()` is itself implemented using seriall's transformer system.
@@ -214,10 +236,10 @@ class User {
     this.name = name;
   }
 
-// must be a prototype method to be detected, so "=" cannot be used to assign the encoder
-  [SYMBOLS.ENCODE](){
+  // must be a prototype method to be detected, so "=" cannot be used to assign the encoder
+  [SYMBOLS.ENCODE]() {
     return [this.name];
-  };
+  }
 
   static [SYMBOLS.DECODE]: Seriall.Transformer.Decoder<
     [string],
