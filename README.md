@@ -214,7 +214,8 @@ class User {
     this.name = name;
   }
 
-  [SYMBOLS.ENCODE]: Seriall.Transformer.Encoder<User, [string]> = () => {
+// must be a prototype method to be detected, so "=" cannot be used to assign the encoder
+  [SYMBOLS.ENCODE](){
     return [this.name];
   };
 
