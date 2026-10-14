@@ -24,6 +24,7 @@ seriall does not serialize or execute JavaScript functions or classes.
   - [Built-in classes](#built-in-classes)
   - [References and circular structures](#references-and-circular-structures)
 - [Custom classes](#custom-classes)
+  - [Custom class optimization](#custom-class-optimization)
   - [Custom class encoding](#custom-class-encoding)
 - [Transformers](#transformers)
   - [Example: `URL`](#example-url)
